@@ -2,9 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   FOUNDRY — two grounds, one system.
+
+   DAY   drafting paper: warm vellum, ink, a deep molten orange that survives
+         on a light ground.
+   NIGHT rolled steel: cold plate, the brand orange running hot.
+
+   Day is the default. Every colour is a variable, so the theme switch and the
+   print stylesheet both work by swapping the block — no component knows which
+   ground it is standing on.
+
+   No letter-spacing anywhere. Martian Mono is already a wide face; spacing it
+   further is the tell of a machine-made layout.
+   ========================================================================== */
+
 @layer base {
+  /* --- DAY (default) --------------------------------------------------- */
   :root {
+    --c-base: 242 239 232; /* #F2EFE8  vellum */
+    --c-panel: 252 250 246; /* #FCFAF6  sheet */
+    --c-raised: 233 229 219; /* #E9E5DB  tinted block */
+    --c-line: 211 205 192; /* #D3CDC0  pencil rule */
+    --c-ink: 26 25 22; /* #1A1916  graphite */
+    --c-dim: 106 101 90; /* #6A655A  soft graphite */
+    --c-molten: 186 68 10; /* #BA440A  brand orange, deepened to read on paper */
+    --c-molten-hot: 245 130 30; /* #F5821E  the brand hue itself, for fills */
+    --c-molten-deep: 138 48 6;
+    --c-verdigris: 61 124 47; /* #3D7C2F  brand green, deepened */
+
+    --grid: rgb(26 25 22 / 0.045);
+    --glow-a: rgb(245 130 30 / 0.1);
+    --glow-b: rgb(90 170 70 / 0.07);
     color-scheme: light;
+  }
+
+  /* --- NIGHT ----------------------------------------------------------- */
+  :root[data-theme='night'] {
+    --c-base: 11 12 14; /* #0B0C0E  cold rolled steel */
+    --c-panel: 19 21 25; /* #131519  plate */
+    --c-raised: 27 30 36; /* #1B1E24  machined face */
+    --c-line: 44 49 58; /* #2C313A  scribe line */
+    --c-ink: 232 230 227; /* #E8E6E3  warm white */
+    --c-dim: 141 149 161; /* #8D95A1  cooled grey */
+    --c-molten: 245 130 30; /* #F5821E  brand orange, running hot */
+    --c-molten-hot: 255 184 92; /* #FFB85C  white-hot */
+    --c-molten-deep: 198 74 12;
+    --c-verdigris: 90 170 70; /* #5AAA46  brand green */
+
+    --grid: rgb(255 255 255 / 0.028);
+    --glow-a: rgb(245 130 30 / 0.16);
+    --glow-b: rgb(90 170 70 / 0.09);
+    color-scheme: dark;
   }
 
   html,
@@ -14,20 +63,45 @@
   }
 
   body {
-    @apply bg-grey-light font-sans text-charcoal antialiased;
-    background-image: radial-gradient(circle at 12% 0%, rgba(245, 130, 30, 0.07), transparent 42%),
-      radial-gradient(circle at 92% 8%, rgba(90, 170, 70, 0.07), transparent 38%);
+    @apply bg-base font-sans text-ink antialiased;
+    /* Depth, not a flat fill: a fine drafting grid, a forge banked bottom-left,
+       a cool cast top-right. */
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      radial-gradient(70rem 40rem at 8% 104%, var(--glow-a), transparent 62%),
+      radial-gradient(52rem 34rem at 96% -6%, var(--glow-b), transparent 60%);
+    background-size:
+      38px 38px,
+      38px 38px,
+      100% 100%,
+      100% 100%;
     background-attachment: fixed;
+    transition:
+      background-color 0.4s ease,
+      color 0.4s ease;
   }
 
-  /* The brand leads with light (300) display type — see cus_text60/48/42 on the
-     live site, which set font-weight:300 at every size above body copy. */
+  /* Display type runs expanded — Archivo carries a real width axis, so this is
+     genuinely wide type rather than normal type pushed apart. */
   h1,
   h2 {
-    @apply font-light;
+    @apply font-display;
+    font-stretch: 125%;
+    font-weight: 800;
+    letter-spacing: -0.02em; /* tightened, never spaced */
   }
 
-  /* Kill the spinner on number inputs - the unit toggle is the affordance here. */
+  table,
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: rgb(var(--c-molten) / 0.25);
+    color: rgb(var(--c-ink));
+  }
+
   input[type='number']::-webkit-outer-spin-button,
   input[type='number']::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -36,61 +110,146 @@
   input[type='number'] {
     -moz-appearance: textfield;
   }
+
+  * {
+    scrollbar-color: rgb(var(--c-line)) transparent;
+    scrollbar-width: thin;
+  }
 }
 
 @layer components {
-  /* The signature Jindal Steel Oman interaction: a solid orange button that
-     swaps to green on hover (.cus_btn2.orange:hover:before on the live site).
-     Not a gradient — that was the Panther skin. */
+  /* --- surfaces --------------------------------------------------------- */
+
+  .card {
+    @apply relative rounded-lg border border-line bg-panel shadow-forge;
+  }
+
+  .card-hot::before {
+    content: '';
+    @apply pointer-events-none absolute inset-x-4 top-0 h-px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--c-molten) / 0.85) 18%,
+      rgb(var(--c-molten-hot) / 0.95) 50%,
+      rgb(var(--c-molten) / 0.85) 82%,
+      transparent
+    );
+  }
+
+  /* --- controls --------------------------------------------------------- */
+
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-primary
-           bg-primary px-7 py-3 text-sm font-medium text-white shadow-soft transition-colors
-           hover:border-green hover:bg-green focus:outline-none focus-visible:ring-2
-           focus-visible:ring-primary focus-visible:ring-offset-2
-           disabled:cursor-not-allowed disabled:border-muted disabled:bg-muted
-           disabled:text-white/80 disabled:shadow-none;
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded
+           border border-molten bg-molten px-7 py-3 font-mono text-xs font-medium
+           text-panel transition-all duration-200
+           hover:shadow-ember focus:outline-none focus-visible:ring-2
+           focus-visible:ring-molten focus-visible:ring-offset-2 focus-visible:ring-offset-base
+           disabled:cursor-not-allowed disabled:border-line disabled:bg-transparent
+           disabled:text-dim/50 disabled:shadow-none;
+  }
+
+  .btn-primary::after {
+    content: '';
+    @apply pointer-events-none absolute inset-y-0 -left-full w-1/3 opacity-0 transition-opacity;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.3), transparent);
+  }
+  .btn-primary:hover:not(:disabled)::after {
+    @apply animate-sweep opacity-100;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-grey/40
-           bg-white px-7 py-3 text-sm font-medium text-charcoal transition-colors
-           hover:border-primary hover:text-primary focus:outline-none
-           focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 rounded border border-line
+           bg-transparent px-7 py-3 font-mono text-xs font-medium text-dim
+           transition-colors hover:border-molten hover:text-molten focus:outline-none
+           focus-visible:ring-2 focus-visible:ring-molten focus-visible:ring-offset-2
+           focus-visible:ring-offset-base;
   }
 
-  .card {
-    @apply rounded-xl border border-grey-light bg-white shadow-card;
-  }
-
-  /* Shared look for the selectable tiles in steps 2, 3 and 4. */
   .tile {
-    @apply relative cursor-pointer rounded-lg border-2 border-grey-light bg-white p-5 text-left
-           transition hover:border-primary/60 hover:shadow-soft focus:outline-none
-           focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+    @apply relative cursor-pointer rounded border border-line bg-panel p-5 text-left
+           transition-all duration-200 hover:-translate-y-0.5 hover:border-molten/50
+           hover:shadow-forge focus:outline-none focus-visible:ring-2
+           focus-visible:ring-molten focus-visible:ring-offset-2 focus-visible:ring-offset-base;
   }
   .tile-selected {
-    @apply border-primary bg-primary/[0.05] shadow-soft;
+    @apply border-molten bg-molten/[0.07] shadow-ember;
+  }
+  .tile-selected::before {
+    content: '';
+    @apply absolute inset-y-3 left-0 w-0.5 rounded-full bg-molten;
   }
 
   .chip {
-    @apply rounded-full border border-grey/40 bg-white px-4 py-1.5 text-sm font-medium
-           text-grey transition-colors hover:border-primary hover:text-primary
-           focus:outline-none focus-visible:ring-2 focus-visible:ring-primary;
+    @apply rounded-full border border-line bg-transparent px-4 py-1.5 font-mono text-xs
+           font-medium text-dim transition-colors hover:border-molten hover:text-molten
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-molten;
   }
   .chip-selected {
-    @apply border-primary bg-primary text-white hover:bg-green hover:text-white;
+    @apply border-molten bg-molten text-panel hover:text-panel;
   }
 
+  .field {
+    @apply flex items-center overflow-hidden rounded border border-line bg-raised
+           transition-colors focus-within:border-molten;
+  }
+
+  /* --- type ------------------------------------------------------------- */
+
   .label-eyebrow {
-    @apply text-xs font-medium uppercase tracking-[0.14em] text-primary;
+    @apply font-mono text-xs font-medium text-molten;
+  }
+
+  .label-key {
+    @apply font-mono text-[11px] text-dim;
+  }
+
+  .figure {
+    @apply font-mono tabular-nums;
+  }
+
+  /* --- page-load choreography ------------------------------------------ */
+
+  .stagger > * {
+    animation: rise 0.62s cubic-bezier(0.16, 0.84, 0.44, 1) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+
+  .rule-pour {
+    transform-origin: left;
+    @apply animate-pour;
   }
 }
 
-/* --- print -------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* --- print: force the daylight palette, whatever the screen is showing ---- */
 @media print {
   @page {
     size: A4;
     margin: 14mm;
+  }
+
+  :root,
+  :root[data-theme='night'] {
+    --c-base: 255 255 255;
+    --c-panel: 255 255 255;
+    --c-raised: 245 245 245;
+    --c-line: 190 190 190;
+    --c-ink: 20 20 20;
+    --c-dim: 90 90 90;
+    --c-molten: 170 62 10;
+    --c-molten-hot: 170 62 10;
+    --c-verdigris: 55 110 42;
+    color-scheme: light;
   }
 
   body {
@@ -101,16 +260,27 @@
   .no-print {
     display: none !important;
   }
-
   .print-only {
     display: block !important;
   }
 
+  /* A sticky bar would float over every printed page. */
+  header {
+    position: static !important;
+    backdrop-filter: none !important;
+    border: 0 !important;
+  }
+
   .card,
   .tile {
-    border: 1px solid #ccc !important;
+    border: 1px solid #bbb !important;
     box-shadow: none !important;
     break-inside: avoid;
+  }
+
+  .card-hot::before,
+  .tile-selected::before {
+    display: none !important;
   }
 
   table,
@@ -120,6 +290,10 @@
 
   thead {
     display: table-header-group;
+  }
+
+  .stagger > * {
+    animation: none !important;
   }
 
   a[href]::after {

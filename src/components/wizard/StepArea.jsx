@@ -1,66 +1,50 @@
 import { NumberField, UnitToggle, ArrowRight } from '../ui/Primitives.jsx';
+import SteelOfOman from '../brand/SteelOfOman.jsx';
 import { areaRangeHint, isOutsideRecommended, validateArea } from '../../lib/validation.js';
 import { DEFAULT_ASSUMPTIONS } from '../../data/assumptions.js';
 
 const VALUE_PROPS = [
   {
+    k: '01',
     title: 'Accurate projections',
-    body: 'Calculate total property area, including carpet, walls, balconies, and more.',
-    icon: (
-      <path d="M4 17V7m0 10h16M8 14V9m4 5V5m4 9v-3" strokeLinecap="round" strokeLinejoin="round" />
-    ),
+    body: 'Total property area, including carpet, walls, balconies and more.',
   },
+  { k: '02', title: 'Easy usage', body: 'No expertise needed, just input basic details.' },
   {
-    title: 'Easy usage',
-    body: 'No expertise needed, just input basic details.',
-    icon: (
-      <path
-        d="M12 4v7m0 0l-3-3m3 3l3-3M5 15v3a2 2 0 002 2h10a2 2 0 002-2v-3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
-  },
-  {
+    k: '03',
     title: 'Negotiate confidently',
     body: 'Know market rates to negotiate better with contractors and suppliers.',
-    icon: (
-      <path
-        d="M8 11a3 3 0 100-6 3 3 0 000 6zm8 0a3 3 0 100-6 3 3 0 000 6zM3 19a5 5 0 0110 0m-1 0a5 5 0 019 0"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
   },
 ];
 
-/** The construction illustration from the mockup, drawn rather than sourced -
- *  no artwork shipped with the brief. */
-function SiteIllustration() {
+/** The out-of-range nudge. Rendered twice on step 1 — once invisibly to reserve
+ *  the slot height at whatever width the text happens to wrap to, and once for
+ *  real on top of it — so showing or hiding it never moves the page.
+ *
+ *  Neutral grey on purpose: this is advice, not a failure, and the molten hue
+ *  is reserved for messages that actually block. */
+function Note({ className = '', ...rest }) {
   return (
-    <svg viewBox="0 0 220 180" className="h-full w-full" role="img" aria-label="Building under construction">
-      <circle cx="110" cy="86" r="78" fill="#F5821E" opacity="0.07" />
-      {/* crane */}
-      <g stroke="#414042" strokeWidth="2.5" fill="none" strokeLinecap="round">
-        <path d="M30 150V34" />
-        <path d="M18 34h84" />
-        <path d="M30 34l22 22M30 56l22-22" strokeWidth="1.6" />
-        <path d="M78 34v16" strokeWidth="1.6" />
-      </g>
-      <rect x="70" y="50" width="16" height="10" fill="#F5821E" rx="1.5" />
-      {/* building frame */}
-      <g fill="none" stroke="#414042" strokeWidth="2.5">
-        <rect x="96" y="66" width="96" height="84" rx="2" fill="#FFFFFF" />
-        <path d="M96 94h96M96 122h96M128 66v84M160 66v84" strokeWidth="1.4" />
-      </g>
-      <rect x="99" y="69" width="26" height="22" fill="#F5821E" opacity="0.18" />
-      <rect x="163" y="125" width="26" height="22" fill="#5AAA46" opacity="0.22" />
-      {/* rebar bundle */}
-      <g stroke="#6D6E71" strokeWidth="2.2" strokeLinecap="round">
-        <path d="M24 150h56M28 156h52M32 162h44" />
-      </g>
-      <path d="M8 168h204" stroke="#414042" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
+    <p
+      className={`flex items-start gap-2 text-xs leading-relaxed text-dim ${className}`}
+      {...rest}
+    >
+      <svg
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        className="mt-0.5 h-3.5 w-3.5 shrink-0"
+        aria-hidden="true"
+      >
+        <circle cx="8" cy="8" r="6.5" />
+        <path d="M8 5v3.5M8 11h.01" strokeLinecap="round" />
+      </svg>
+      <span>
+        That is outside the recommended range. You can still continue — the estimate is calibrated
+        for low-rise homes, so treat the result with extra caution.
+      </span>
+    </p>
   );
 }
 
@@ -71,23 +55,32 @@ export default function StepArea({ state, dispatch, onNext, assumptions = DEFAUL
   const outsideRecommended = !error && isOutsideRecommended(state.area, state.unit, assumptions);
 
   return (
-    <div className="px-4 py-8 sm:px-8">
-      <div className="grid items-center gap-8 md:grid-cols-2">
-        <div className="mx-auto h-48 w-full max-w-sm sm:h-60">
-          <SiteIllustration />
+    <div className="stagger px-4 py-6 sm:px-8">
+      <div className="grid items-center gap-8 md:grid-cols-[1fr_1fr]" style={{ '--i': 0 }}>
+        <div className="mx-auto w-full max-w-sm">
+          <SteelOfOman />
         </div>
 
         <div>
-          <h1 className="text-2xl font-bold text-charcoal sm:text-3xl">Rebar Estimator</h1>
-          <p className="mt-2 text-sm text-grey">
-            Accurate, hassle-free rebar calculations for slabs, beams, columns, and more.
+          <p className="label-eyebrow">Jindal Steel Oman</p>
+          <h1 className="mt-3 text-3xl leading-[1.05] text-ink sm:text-[2.6rem]">
+            Rebar
+            <br />
+            Estimator
+          </h1>
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-dim">
+            Accurate, hassle-free rebar calculations for slabs, beams, columns and more.
           </p>
 
-          <h2 className="mt-7 text-lg font-semibold text-charcoal">Ground floor area</h2>
-          <p className="mt-1 text-xs text-grey">{areaRangeHint(state.unit, assumptions)}</p>
+          <div className="mt-8 h-px w-full origin-left bg-gradient-to-r from-molten via-molten/30 to-transparent rule-pour" />
 
-          <div className="mt-3 flex flex-wrap items-start gap-3">
-            <div className="min-w-[180px] flex-1">
+          <h2 className="mt-8 font-mono text-[11px] text-ink">
+            Ground floor area
+          </h2>
+          <p className="mt-2 text-xs text-dim">{areaRangeHint(state.unit, assumptions)}</p>
+
+          <div className="mt-4 flex flex-wrap items-stretch gap-3">
+            <div className="min-w-[200px] flex-1">
               <NumberField
                 prefix={state.unit === 'sqm' ? 'm²' : 'ft²'}
                 value={state.area}
@@ -96,65 +89,53 @@ export default function StepArea({ state, dispatch, onNext, assumptions = DEFAUL
                   if (e.key === 'Enter' && !error) onNext();
                 }}
                 error={touched && error}
-                placeholder="0.00"
+                placeholder="0"
                 aria-label="Ground floor area"
                 aria-invalid={Boolean(touched && error)}
               />
             </div>
-            <UnitToggle
-              value={state.unit}
-              onChange={(v) => dispatch({ type: 'setUnit', value: v })}
-            />
+            <UnitToggle value={state.unit} onChange={(v) => dispatch({ type: 'setUnit', value: v })} />
           </div>
 
-          {touched && error && (
-            <p role="alert" className="mt-2 text-xs font-medium text-primary">
-              {error.message}
-            </p>
-          )}
+          {/* Message slot.
+              Errors and the out-of-range nudge are mutually exclusive, and both
+              used to be conditionally mounted — so typing 40000 pushed the
+              button and the cards below it down the page. The slot now always
+              occupies the height of the LONGEST message: a copy of the nudge is
+              rendered invisibly to hold the space, and the live message is laid
+              over it. Reserving with a fixed px height would break as soon as
+              the text wrapped to a different number of lines, so the spacer is
+              the real text instead. */}
+          <div className="relative mt-3">
+            <Note aria-hidden className="invisible" />
+            <div className="absolute inset-0">
+              {touched && error ? (
+                <p role="alert" className="animate-fade font-mono text-[11px] text-molten">
+                  {error.message}
+                </p>
+              ) : outsideRecommended ? (
+                <Note className="animate-fade" />
+              ) : null}
+            </div>
+          </div>
 
-          {/* Outside the recommended band is a nudge, not an error — styled in the
-              neutral charcoal rather than the brand orange used for real errors. */}
-          {outsideRecommended && (
-            <p className="mt-2 flex items-start gap-1.5 text-xs text-grey">
-              <svg
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                className="mt-px h-3.5 w-3.5 shrink-0"
-                aria-hidden="true"
-              >
-                <circle cx="8" cy="8" r="6.5" />
-                <path d="M8 5v3.5M8 11h.01" strokeLinecap="round" />
-              </svg>
-              <span>
-                That is outside the recommended range. You can still continue — the estimate is
-                calibrated for low-rise homes, so treat the result with extra caution.
-              </span>
-            </p>
-          )}
-
-          <button type="button" className="btn-primary mt-6 w-full sm:w-auto" onClick={onNext} disabled={Boolean(error)}>
-            Next <ArrowRight className="h-4 w-4" />
+          <button
+            type="button"
+            className="btn-primary mt-7 w-full sm:w-auto"
+            onClick={onNext}
+            disabled={Boolean(error)}
+          >
+            Begin <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-3">
-        {VALUE_PROPS.map((p) => (
-          <div key={p.title} className="rounded-xl border border-grey-light bg-white p-4">
-            <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
-                  {p.icon}
-                </svg>
-              </span>
-              <div>
-                <h3 className="text-sm font-semibold text-charcoal">{p.title}</h3>
-                <p className="mt-1 text-xs leading-relaxed text-grey">{p.body}</p>
-              </div>
-            </div>
+      <div className="mt-8 grid gap-px overflow-hidden rounded border border-line bg-line sm:grid-cols-3">
+        {VALUE_PROPS.map((p, i) => (
+          <div key={p.title} className="bg-panel p-6" style={{ '--i': i + 1 }}>
+            <span className="font-mono text-[10px] text-molten/70">{p.k}</span>
+            <h3 className="mt-3 text-sm font-semibold text-ink">{p.title}</h3>
+            <p className="mt-2 text-xs leading-relaxed text-dim">{p.body}</p>
           </div>
         ))}
       </div>

@@ -1,4 +1,4 @@
-import { Tile, StepHeading } from '../ui/Primitives.jsx';
+import { Tile } from '../ui/Primitives.jsx';
 import { SCOPES, GRADES } from '../../data/assumptions.js';
 
 /** Small line drawings so each scope tile reads at a glance. */
@@ -37,44 +37,46 @@ const ART = {
 
 export default function StepScope({ state, dispatch }) {
   return (
-    <div className="px-4 py-8 sm:px-8">
-      <StepHeading
-        title="What do you want to calculate rebar estimate for?"
-        sub="Pick Full House for a complete build, or a single element to price one pour."
-      />
+    <div className="stagger px-4 py-6 sm:px-8">
+      {/* Title left, grade selector right — the same one-row header step 3 uses,
+          so the two steps sit at the same height. */}
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3" style={{ '--i': 0 }}>
+        <div className="min-w-0">
+          <p className="label-eyebrow">Step 4</p>
+          <h2 className="mt-1 text-lg text-ink sm:text-xl">
+            What should we estimate rebar for?
+          </h2>
+        </div>
+      </div>
 
-      <div className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Five across on a wide screen: one row instead of two. */}
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5" style={{ '--i': 1 }}>
         {SCOPES.map((s) => (
           <Tile
             key={s.id}
             selected={state.scope === s.id}
             onClick={() => dispatch({ type: 'setScope', value: s.id })}
-            className="flex items-start gap-3"
+            className="!p-3"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <svg viewBox="0 0 24 24" className="h-6 w-6">
+            <span className="flex h-8 w-8 items-center justify-center rounded bg-molten/10 text-molten">
+              <svg viewBox="0 0 24 24" className="h-5 w-5">
                 {ART[s.id]}
               </svg>
             </span>
-            <div>
-              <div className="text-sm font-semibold text-charcoal">{s.label}</div>
-              <div className="mt-0.5 text-xs leading-relaxed text-grey">{s.blurb}</div>
-            </div>
+            <div className="mt-2 text-sm font-semibold text-ink">{s.label}</div>
+            <div className="mt-0.5 text-[11px] leading-snug text-dim">{s.blurb}</div>
           </Tile>
         ))}
       </div>
 
-      <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-grey-light bg-white p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold text-charcoal">TMT grade</h3>
-            <p className="mt-0.5 text-xs text-grey">
-              Optional. Leave on <strong>Recommended</strong> to use A615 Gr-60 throughout, the
-              standard residential grade. Grade changes the rate, never the weight.
-            </p>
-          </div>
+      <div className="mt-4 rounded border border-line bg-panel p-4" style={{ '--i': 2 }}>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h3 className="font-mono text-[11px] text-ink">TMT grade</h3>
+          <p className="text-[11px] text-dim">
+            Optional — grade changes the rate, never the weight.
+          </p>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => dispatch({ type: 'setGrade', value: null })}
@@ -96,6 +98,12 @@ export default function StepScope({ state, dispatch }) {
             </button>
           ))}
         </div>
+        {/* The chosen grade's note, rather than a paragraph explaining all nine. */}
+        <p className="mt-2 text-[11px] text-dim">
+          {state.grade
+            ? GRADES.find((g) => g.id === state.grade)?.note
+            : 'A615 Gr-60 throughout — the standard residential grade.'}
+        </p>
       </div>
     </div>
   );

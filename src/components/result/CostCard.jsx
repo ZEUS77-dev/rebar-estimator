@@ -14,8 +14,8 @@ export default function CostCard({ result, state, dispatch, assumptions = DEFAUL
 
   return (
     <section className="card avoid-break p-5">
-      <h3 className="text-sm font-semibold text-charcoal">Indicative cost</h3>
-      <p className="mt-0.5 text-xs text-grey">
+      <h3 className="text-sm font-semibold text-ink">Indicative cost</h3>
+      <p className="mt-0.5 text-xs text-dim">
         {result.input.scope === 'full'
           ? 'For the full house.'
           : `For ${scopeLabel.toLowerCase()} only.`}{' '}
@@ -23,11 +23,11 @@ export default function CostCard({ result, state, dispatch, assumptions = DEFAUL
       </p>
 
       <div className="mt-4">
-        <label htmlFor="rate" className="text-xs font-medium text-grey">
-          Rate per tonne {usingDefaults && <span className="text-grey/70">(grade-wise default)</span>}
+        <label htmlFor="rate" className="text-xs font-medium text-dim">
+          Rate per tonne {usingDefaults && <span className="text-dim/70">(grade-wise default)</span>}
         </label>
-        <div className="mt-1.5 flex items-center overflow-hidden rounded-lg border border-grey/40 bg-white focus-within:border-primary">
-          <span className="border-r border-grey-light bg-grey-light px-3 py-2.5 text-sm text-grey">
+        <div className="mt-1.5 flex items-center overflow-hidden rounded-lg border border-line bg-panel focus-within:border-molten">
+          <span className="border-r border-line bg-raised px-3 py-2.5 text-sm text-dim">
             {assumptions.currencySymbol}
           </span>
           <input
@@ -40,12 +40,12 @@ export default function CostCard({ result, state, dispatch, assumptions = DEFAUL
             placeholder={usingDefaults ? formatNumber(result.totals.blendedRatePerTonne, 0, locale) : ''}
             value={state.rate ?? ''}
             onChange={(e) => dispatch({ type: 'setRate', value: e.target.value })}
-            className="w-full px-3 py-2.5 text-sm font-medium text-charcoal outline-none"
+            className="w-full px-3 py-2.5 text-sm font-medium text-ink outline-none"
           />
-          <span className="px-3 py-2.5 text-sm text-grey">/ tonne</span>
+          <span className="px-3 py-2.5 text-sm text-dim">/ tonne</span>
         </div>
         <div className="mt-1.5 flex items-center justify-between">
-          <p className="text-[11px] text-grey">
+          <p className="text-[11px] text-dim">
             Clamped to {formatCurrency(min, { currency, locale })} –{' '}
             {formatCurrency(max, { currency, locale })}
           </p>
@@ -53,7 +53,7 @@ export default function CostCard({ result, state, dispatch, assumptions = DEFAUL
             <button
               type="button"
               onClick={() => dispatch({ type: 'setRate', value: null })}
-              className="text-[11px] font-medium text-primary underline underline-offset-2"
+              className="text-[11px] font-medium text-molten underline underline-offset-2"
             >
               Reset to defaults
             </button>
@@ -61,16 +61,16 @@ export default function CostCard({ result, state, dispatch, assumptions = DEFAUL
         </div>
       </div>
 
-      <dl className="mt-5 space-y-2 border-t border-grey-light pt-4 text-sm">
+      <dl className="mt-5 space-y-2 border-t border-line pt-4 text-sm">
         <div className="flex justify-between">
-          <dt className="text-grey">Total quantity</dt>
-          <dd className="font-medium text-charcoal">
+          <dt className="text-dim">Total quantity</dt>
+          <dd className="font-medium text-ink">
             {formatNumber(result.totals.tonnes, 3, locale)} t
           </dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-grey">Effective rate</dt>
-          <dd className="font-medium text-charcoal">
+          <dt className="text-dim">Effective rate</dt>
+          <dd className="font-medium text-ink">
             {costKnown
               ? `${formatCurrency(result.totals.blendedRatePerTonne, { currency, locale })} / t`
               : '—'}
@@ -78,8 +78,8 @@ export default function CostCard({ result, state, dispatch, assumptions = DEFAUL
         </div>
       </dl>
 
-      <div className="mt-4 rounded-xl bg-primary px-5 py-4 text-white">
-        <div className="text-xs uppercase tracking-wide text-white/80">Estimated rebar cost</div>
+      <div className="mt-4 rounded-xl bg-molten px-5 py-4 text-ink">
+        <div className="text-xs text-base/70">Estimated rebar cost</div>
         <div className="mt-1 text-2xl font-bold">
           {costKnown ? formatCurrency(result.totals.cost, { currency, locale }) : '—'}
         </div>
