@@ -11,11 +11,12 @@ export default function DiameterTable({ result }) {
         <h3 className="text-sm font-semibold text-ink">Quantity by bar diameter</h3>
         <p className="mt-0.5 text-xs text-dim">
           Unit weight per IS 1786 (d²/162). Bars counted as whole 12 m lengths.
+          <span className="sm:hidden"> Scroll the table sideways for every column.</span>
         </p>
       </header>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] text-sm">
+        <table className="w-full min-w-[30rem] text-sm">
           <thead>
             <tr className="bg-raised text-left text-xs text-ink">
               <th className="px-5 py-3 font-medium">Dia</th>

@@ -22,7 +22,7 @@ export default function ElementSplit({ result }) {
                   {e.grade}
                 </span>
               </span>
-              <span className="text-sm text-dim">
+              <span className="min-w-0 text-sm text-dim">
                 <strong className="font-semibold text-ink">
                   {formatNumber(e.grossKg, 0, locale)} kg
                 </strong>
@@ -51,9 +51,9 @@ export default function ElementSplit({ result }) {
         <h4 className="text-xs font-semibold text-molten">By grade</h4>
         <ul className="mt-2 space-y-1.5">
           {result.byGrade.map((g) => (
-            <li key={g.grade} className="flex justify-between text-sm">
+            <li key={g.grade} className="flex flex-wrap items-baseline justify-between gap-x-2 text-sm">
               <span className="text-ink">{g.grade}</span>
-              <span className="text-dim">
+              <span className="min-w-0 text-dim">
                 {formatNumber(g.tonnes, 3, locale)} t @{' '}
                 {formatCurrency(g.ratePerTonne, { currency, locale })}/t ={' '}
                 <strong className="font-semibold text-ink">

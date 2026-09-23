@@ -14,7 +14,7 @@ function Stat({ label, value, sub, emphasis, i = 0 }) {
     <div
       style={{ '--i': i }}
       className={[
-        'relative overflow-hidden rounded border px-5 py-5',
+        'relative overflow-hidden rounded border px-4 py-4 sm:px-5 sm:py-5',
         emphasis ? 'border-molten/60 bg-molten/[0.09]' : 'border-line bg-panel',
       ].join(' ')}
     >
@@ -27,8 +27,10 @@ function Stat({ label, value, sub, emphasis, i = 0 }) {
       <div className="label-key relative">{label}</div>
       <div
         className={[
-          'relative mt-2 font-mono tabular-nums',
-          emphasis ? 'text-3xl font-bold text-molten' : 'text-2xl font-medium text-ink',
+          'relative mt-2 break-words font-mono tabular-nums',
+          emphasis
+            ? 'text-2xl font-bold text-molten sm:text-3xl'
+            : 'text-xl font-medium text-ink sm:text-2xl',
         ].join(' ')}
       >
         {value}
@@ -110,12 +112,15 @@ export default function ResultView({ result, state, dispatch, onBack, onRestart,
         <PrintShareBar result={result} onRestart={onRestart} />
       </div>
 
+      {/* min-w-0 on both columns: a grid child defaults to min-width:auto, so
+          the 520px table below would otherwise widen the whole page on a phone
+          instead of scrolling inside its own box. */}
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <DiameterTable result={result} />
           <ElementSplit result={result} />
         </div>
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <CostCard result={result} state={state} dispatch={dispatch} assumptions={assumptions} />
           <AssumptionsPanel result={result} />
         </div>

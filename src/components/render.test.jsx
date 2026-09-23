@@ -550,3 +550,49 @@ describe('contrast on molten surfaces', () => {
     expect(html).not.toContain('text-molten-hot');
   });
 });
+
+describe('mobile: nothing widens the page', () => {
+  const resultHtml = () =>
+    renderToString(
+      <ResultView
+        result={result}
+        state={{ ...state, step: 5 }}
+        dispatch={noop}
+        onBack={noop}
+        onRestart={noop}
+        assumptions={DEFAULT_ASSUMPTIONS}
+      />,
+    );
+
+  it('lets the result columns shrink below their content width', () => {
+    const html = resultHtml();
+    // A grid child defaults to min-width:auto, so without min-w-0 the 30rem
+    // table widens the page instead of scrolling inside its own box.
+    const cols = html.match(/<div class="[^"]*space-y-4[^"]*"/g) || [];
+    expect(cols.length).toBeGreaterThanOrEqual(2);
+    for (const c of cols) expect(c, c).toContain('min-w-0');
+  });
+
+  it('keeps every fixed width inside a scroll container', () => {
+    const html = resultHtml();
+    // The only wide element allowed is the diameter table, and it must sit in
+    // an overflow-x-auto box.
+    const wide = html.match(/min-w-\[[^\]]+\]/g) || [];
+    expect(wide).toHaveLength(1);
+    expect(html).toContain('overflow-x-auto');
+    const scroller = html.slice(html.indexOf('overflow-x-auto'));
+    expect(scroller.slice(0, 200)).toMatch(/min-w-\[/);
+  });
+
+  it('steps the headline figures down on small screens', () => {
+    const html = resultHtml();
+    expect(html).toContain('sm:text-3xl');
+    expect(html).toContain('break-words');
+  });
+
+  it('tells phone users the table scrolls', () => {
+    const html = resultHtml();
+    expect(html).toContain('Scroll the table sideways');
+    expect(html).toContain('sm:hidden');
+  });
+});

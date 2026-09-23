@@ -3,9 +3,9 @@ import { ELEMENT_LABELS } from '../../data/assumptions.js';
 import { Disclaimer } from '../ui/Primitives.jsx';
 
 const Row = ({ label, value }) => (
-  <div className="flex justify-between gap-4 py-1.5">
-    <dt className="text-dim">{label}</dt>
-    <dd className="text-right font-medium text-ink">{value}</dd>
+  <div className="flex items-baseline justify-between gap-3 py-1.5">
+    <dt className="shrink-0 text-dim">{label}</dt>
+    <dd className="min-w-0 break-words text-right font-medium text-ink">{value}</dd>
   </div>
 );
 
@@ -74,9 +74,9 @@ export default function AssumptionsPanel({ result }) {
             <div className="font-semibold text-ink">Diameter mix</div>
             <ul className="mt-1 space-y-0.5 text-dim">
               {Object.entries(a.diameterMix).map(([el, mix]) => (
-                <li key={el} className="flex justify-between gap-3">
+                <li key={el} className="flex items-baseline justify-between gap-3">
                   <span className="shrink-0">{ELEMENT_LABELS[el]}</span>
-                  <span className="text-right font-medium text-ink">
+                  <span className="min-w-0 break-words text-right font-medium text-ink">
                     {Object.entries(mix)
                       .map(([d, f]) => `${d}mm ${formatNumber(f * 100, 0, locale)}%`)
                       .join(' · ')}
