@@ -57,20 +57,20 @@ export default function StepScope({ state, dispatch }) {
               </svg>
             </span>
             <div>
-              <div className="text-sm font-semibold text-navy">{s.label}</div>
+              <div className="text-sm font-semibold text-charcoal">{s.label}</div>
               <div className="mt-0.5 text-xs leading-relaxed text-grey">{s.blurb}</div>
             </div>
           </Tile>
         ))}
       </div>
 
-      <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-grey/15 bg-white p-5">
+      <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-grey-light bg-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-navy">TMT grade</h3>
+            <h3 className="text-sm font-semibold text-charcoal">TMT grade</h3>
             <p className="mt-0.5 text-xs text-grey">
-              Optional. Leave on <strong>Recommended</strong> to use Fe500D for slabs and footings
-              and Fe550D for beams and columns. Grade changes the rate, never the weight.
+              Optional. Leave on <strong>Recommended</strong> to use A615 Gr-60 throughout, the
+              standard residential grade. Grade changes the rate, never the weight.
             </p>
           </div>
         </div>

@@ -3,12 +3,12 @@
  *  Everything a reviewer might argue with lives here, in one object, so it can be
  *  tuned without touching the engine. Rates are built up PER ELEMENT rather than
  *  down from a single kg/sq.ft figure, so the total lands inside the standard
- *  Indian residential RCC band of 3.5-4.5 kg/sq.ft on its own.
+ *  residential RCC band of 3.5-4.5 kg/sq.ft on its own.
  *
- *  These are indicative thumb rules for low-rise residential RCC (M20-M25, spans
- *  under about 4.5 m, mild soil). They are NOT a structural design. */
+ *  These are indicative thumb rules for low-rise residential RCC (spans under
+ *  about 4.5 m, mild soil). They are NOT a structural design. */
 
-export const ENGINE_VERSION = '1.0.0';
+export const ENGINE_VERSION = '1.1.0';
 
 export const DISCLAIMER =
   'Indicative thumb-rule estimate for residential RCC (G to G+2). Not a structural design. Consult a licensed structural engineer before procurement.';
@@ -16,7 +16,14 @@ export const DISCLAIMER =
 export const DEFAULT_ASSUMPTIONS = {
   version: ENGINE_VERSION,
 
-  areaLimitsSqFt: { min: 578.0, max: 1934.0 },
+  /** No fixed range: any positive area is accepted. These are advisory only —
+   *  outside this band the result screen notes the area is unusual for a
+   *  residential floor plate, but nothing is blocked. */
+  typicalAreaSqFt: { min: 400, max: 5000 },
+
+  /** The entered footprint is rounded to the nearest whole sq.ft before use.
+   *  A hand-measured plot does not carry three decimal places of meaning. */
+  areaRoundingSqFt: 1,
 
   /** kg of steel per sq.ft of the element's reference area. */
   elementRatesKgPerSqFt: {
@@ -48,24 +55,40 @@ export const DEFAULT_ASSUMPTIONS = {
     misc: { 8: 0.5, 10: 0.3, 12: 0.2 },
   },
 
-  /** Grade changes the rate and the label, never the weight - weight is geometry. */
+  /** Grade changes the rate and the label, never the weight - weight is geometry.
+   *  A615 Gr-60 is the residential workhorse, so it is the default throughout;
+   *  the grade selector switches the whole job. */
   gradeByElement: {
-    slab: 'Fe500D',
-    beam: 'Fe550D',
-    column: 'Fe550D',
-    footing: 'Fe500D',
-    misc: 'Fe500D',
+    slab: 'A615-60',
+    beam: 'A615-60',
+    column: 'A615-60',
+    footing: 'A615-60',
+    misc: 'A615-60',
   },
 
   wastagePct: 0.03,
   lapPct: 0.05,
 
-  /** Swap this whole block for another market (e.g. OMR) - nothing else changes. */
-  currency: 'INR',
-  locale: 'en-IN',
-  currencySymbol: '₹',
-  ratePerTonne: { Fe500D: 62000, Fe550D: 64000, Fe600: 67000, CRS: 68000 },
-  rateLimits: { min: 10000, max: 200000 },
+  /** Swap this whole block for another market - nothing else changes. */
+  currency: 'USD',
+  locale: 'en-US',
+  currencySymbol: '$',
+
+  /** PLACEHOLDER RATES — indicative USD per tonne, NOT quoted prices.
+   *  Replace with Jindal Steel Oman's actual commercial rates before this is
+   *  shown to anyone outside the review. */
+  ratePerTonne: {
+    B500B: 620,
+    'A615-40': 595,
+    'A615-60': 620,
+    'A615-75': 645,
+    'A706-60': 680,
+    'A706-80': 705,
+    A1035: 1250,
+    'AIR-COOLED': 580,
+  },
+  ratesArePlaceholder: true,
+  rateLimits: { min: 200, max: 3000 },
 
   disclaimer: DISCLAIMER,
 };
@@ -80,13 +103,19 @@ export const ELEMENTS = [
 
 export const ELEMENT_LABELS = Object.fromEntries(ELEMENTS.map((e) => [e.id, e.label]));
 
-/** BIS grades Jindal Panther actually rolls, per the product spec on jindalpanther.com. */
+/** The Jindal Steel Oman rebar range. */
 export const GRADES = [
-  { id: 'Fe500D', label: 'Fe500D', note: 'General residential - slabs, footings' },
-  { id: 'Fe550D', label: 'Fe550D', note: 'Higher strength - beams, columns' },
-  { id: 'Fe600', label: 'Fe600', note: 'High load; atypical for G to G+2' },
-  { id: 'CRS', label: 'CRS', note: 'Corrosion resistant - coastal, saline soil' },
+  { id: 'B500B', label: 'B500B', standard: 'BS 4449', note: 'General purpose — the common GCC specification' },
+  { id: 'A615-40', label: 'A615 Gr-40', standard: 'ASTM A615', note: 'Lower strength — light structures' },
+  { id: 'A615-60', label: 'A615 Gr-60', standard: 'ASTM A615', note: 'Standard residential workhorse' },
+  { id: 'A615-75', label: 'A615 Gr-75', standard: 'ASTM A615', note: 'Higher strength — heavier loads' },
+  { id: 'A706-60', label: 'A706 Gr-60', standard: 'ASTM A706', note: 'Earthquake resistant — weldable, ductile' },
+  { id: 'A706-80', label: 'A706 Gr-80', standard: 'ASTM A706', note: 'Earthquake resistant — high strength' },
+  { id: 'A1035', label: 'A1035', standard: 'ASTM A1035', note: 'Corrosion resistant — coastal and saline ground' },
+  { id: 'AIR-COOLED', label: 'Air-cooled', standard: '—', note: 'Air-cooled rebar' },
 ];
+
+export const GRADES_BY_ID = Object.fromEntries(GRADES.map((g) => [g.id, g]));
 
 export const SCOPES = [
   {

@@ -56,7 +56,7 @@ export default function App() {
       <footer className="no-print pb-8 text-center">
         <Disclaimer text={DISCLAIMER} className="mx-auto max-w-2xl" />
         <p className="mt-2 text-[11px] text-grey/70">
-          Prototype · Jindal Panther TMT Rebars · not a production tool
+          Prototype · Jindal Steel Oman · not a production tool
         </p>
       </footer>
     </div>

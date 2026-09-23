@@ -54,16 +54,16 @@ export default function StepPlan({ state, dispatch }) {
               <div className="h-40 shrink-0 bg-white p-2">
                 <FloorPlanSvg plan={p} compact />
               </div>
-              <div className="mt-auto grid grid-cols-2 gap-2 border-t border-grey/15 bg-grey-light px-3 py-2.5 text-left">
+              <div className="mt-auto grid grid-cols-2 gap-2 border-t border-grey-light bg-grey-light px-3 py-2.5 text-left">
                 <div>
                   <div className="text-[10px] uppercase tracking-wide text-primary">Area</div>
-                  <div className="text-sm font-semibold text-navy">
+                  <div className="text-sm font-semibold text-charcoal">
                     {formatNumber(p.areaSqFt, 2)} sqft
                   </div>
                 </div>
                 <div>
                   <div className="text-[10px] uppercase tracking-wide text-primary">Type</div>
-                  <div className="text-sm font-semibold text-navy">{p.type}</div>
+                  <div className="text-sm font-semibold text-charcoal">{p.type}</div>
                 </div>
               </div>
             </Tile>
@@ -82,18 +82,18 @@ export default function StepPlan({ state, dispatch }) {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white">
                   <CheckIcon className="h-3.5 w-3.5" />
                 </span>
-                <span className="text-sm font-semibold text-navy">{selected.name} selected</span>
+                <span className="text-sm font-semibold text-charcoal">{selected.name} selected</span>
               </div>
               <dl className="mt-4 space-y-3">
                 <div>
                   <dt className="text-[10px] uppercase tracking-wide text-primary">Area</dt>
-                  <dd className="text-lg font-semibold text-navy">
+                  <dd className="text-lg font-semibold text-charcoal">
                     {formatNumber(selected.areaSqFt, 2)} sq ft
                   </dd>
                 </div>
                 <div>
                   <dt className="text-[10px] uppercase tracking-wide text-primary">Type</dt>
-                  <dd className="text-lg font-semibold text-navy">{selected.type}</dd>
+                  <dd className="text-lg font-semibold text-charcoal">{selected.type}</dd>
                 </div>
                 <div>
                   <dt className="text-[10px] uppercase tracking-wide text-primary">Rooms</dt>

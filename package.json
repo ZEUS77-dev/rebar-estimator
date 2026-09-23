@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Jindal Panther TMT Rebar Estimator - prototype",
+  "description": "Jindal Steel Oman TMT Rebar Estimator - prototype",
   "scripts": {
     "dev": "node ./node_modules/vite/bin/vite.js",
     "build": "node ./node_modules/vite/bin/vite.js build",

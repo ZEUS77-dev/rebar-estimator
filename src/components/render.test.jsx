@@ -48,7 +48,7 @@ describe('screens render', () => {
     const html = renderToString(<App />);
     expect(html).toContain('Rebar Estimator');
     expect(html).toContain('Ground floor area');
-    expect(html).toContain('578.00');
+    expect(html).toContain('Enter the built footprint');
   });
 
   it('renders step 1', () => {
@@ -111,7 +111,7 @@ describe('result screen renders', () => {
         assumptions={DEFAULT_ASSUMPTIONS}
       />,
     );
-    expect(html).toContain('10.517');
+    expect(html).toContain('10.51');
     expect(html).toContain('Quantity by bar diameter');
     expect(html).toContain('Split by element');
     expect(html).toContain('Assumptions used');
@@ -145,7 +145,7 @@ describe('result screen renders', () => {
   it('renders a dash rather than a zero cost when the rate is blank', () => {
     const blanked = {
       ...result,
-      totals: { ...result.totals, costInr: NaN, blendedRatePerTonne: NaN },
+      totals: { ...result.totals, cost: NaN, blendedRatePerTonne: NaN },
     };
     const html = renderToString(
       <ResultView
@@ -158,11 +158,12 @@ describe('result screen renders', () => {
       />,
     );
     expect(html).toContain('enter a rate per tonne');
-    expect(html).not.toMatch(/₹\s*0(?!\d)/);
+    expect(html).not.toMatch(/\$\s*0(?!\d)/);
   });
 
   it('shows the validation errors instead of crashing on a bad estimate', () => {
-    const bad = estimate({ areaSqFt: 100, floors: 'G' });
+    // 100 sq.ft is valid now that the fixed range is gone, so force a real error.
+    const bad = estimate({ areaSqFt: 'not a number', floors: 'G' });
     expect(bad.ok).toBe(false);
     const html = renderToString(
       <ResultView

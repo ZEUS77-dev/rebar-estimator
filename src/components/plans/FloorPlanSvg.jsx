@@ -25,7 +25,7 @@ export default function FloorPlanSvg({ plan, compact = false, className = '' }) 
         width={VB}
         height={VB}
         fill="#FFFFFF"
-        stroke="#02245B"
+        stroke="#414042"
         strokeWidth="1.6"
         rx="0.5"
       />
@@ -46,7 +46,7 @@ export default function FloorPlanSvg({ plan, compact = false, className = '' }) 
               width={r.w}
               height={r.h}
               fill={i % 2 === 0 ? '#FFFFFF' : '#FAFAFA'}
-              stroke="#5F656F"
+              stroke="#6D6E71"
               strokeWidth="0.7"
             />
             {showLabel && (
@@ -57,7 +57,7 @@ export default function FloorPlanSvg({ plan, compact = false, className = '' }) 
                 fontSize={fontSize}
                 fontFamily="Roboto, sans-serif"
                 fontWeight="500"
-                fill="#414040"
+                fill="#414042"
                 letterSpacing="0.15"
               >
                 {r.label}
@@ -70,7 +70,7 @@ export default function FloorPlanSvg({ plan, compact = false, className = '' }) 
                 textAnchor="middle"
                 fontSize={fontSize - 0.7}
                 fontFamily="Roboto, sans-serif"
-                fill="#5F656F"
+                fill="#6D6E71"
               >
                 {r.dim}
               </text>
@@ -80,7 +80,7 @@ export default function FloorPlanSvg({ plan, compact = false, className = '' }) 
       })}
 
       {/* entry mark on the bottom wall */}
-      <path d="M46 100 A 6 6 0 0 1 54 100" fill="none" stroke="#FF5E14" strokeWidth="1.1" />
+      <path d="M46 100 A 6 6 0 0 1 54 100" fill="none" stroke="#F5821E" strokeWidth="1.1" />
     </svg>
   );
 }

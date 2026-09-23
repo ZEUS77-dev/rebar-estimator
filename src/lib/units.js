@@ -29,7 +29,7 @@ export const round = (v, dp = 2) => {
   return Math.round((v + Number.EPSILON) * f) / f;
 };
 
-export function formatNumber(v, dp = 0, locale = 'en-IN') {
+export function formatNumber(v, dp = 0, locale = 'en-US') {
   if (!Number.isFinite(v)) return '—';
   return new Intl.NumberFormat(locale, {
     minimumFractionDigits: dp,
@@ -37,7 +37,7 @@ export function formatNumber(v, dp = 0, locale = 'en-IN') {
   }).format(v);
 }
 
-export function formatCurrency(v, { currency = 'INR', locale = 'en-IN' } = {}) {
+export function formatCurrency(v, { currency = 'USD', locale = 'en-US' } = {}) {
   if (!Number.isFinite(v)) return '—';
   return new Intl.NumberFormat(locale, {
     style: 'currency',
@@ -47,7 +47,7 @@ export function formatCurrency(v, { currency = 'INR', locale = 'en-IN' } = {}) {
 }
 
 /** "1,356.25 sq. ft." / "126.00 sq. mts." */
-export function formatArea(v, unit = 'sqft', locale = 'en-IN') {
+export function formatArea(v, unit = 'sqft', locale = 'en-US') {
   return `${formatNumber(v, 2, locale)} ${unit === 'sqm' ? 'sq. mts.' : 'sq. ft.'}`;
 }
 

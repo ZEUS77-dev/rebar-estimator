@@ -12,13 +12,13 @@ function Stat({ label, value, sub, emphasis }) {
     <div
       className={[
         'rounded-xl px-5 py-4',
-        emphasis ? 'bg-panther text-white' : 'border border-grey/15 bg-white',
+        emphasis ? 'bg-primary text-white' : 'border border-grey-light bg-white',
       ].join(' ')}
     >
       <div className={`text-[11px] uppercase tracking-wide ${emphasis ? 'text-white/80' : 'text-primary'}`}>
         {label}
       </div>
-      <div className={`mt-1 text-2xl font-bold ${emphasis ? 'text-white' : 'text-navy'}`}>
+      <div className={`mt-1 text-2xl font-bold ${emphasis ? 'text-white' : 'text-charcoal'}`}>
         {value}
       </div>
       {sub && (
@@ -34,8 +34,8 @@ export default function ResultView({ result, state, dispatch, onBack, onRestart,
   if (!result.ok) {
     return (
       <div className="px-4 py-12 text-center sm:px-8">
-        <h2 className="text-lg font-semibold text-navy">We can’t calculate this yet</h2>
-        <ul className="mx-auto mt-3 max-w-md space-y-1 text-sm text-primary-700">
+        <h2 className="text-lg font-semibold text-charcoal">We can’t calculate this yet</h2>
+        <ul className="mx-auto mt-3 max-w-md space-y-1 text-sm text-primary">
           {result.errors.map((e, i) => (
             <li key={i}>{e.message}</li>
           ))}
@@ -49,14 +49,14 @@ export default function ResultView({ result, state, dispatch, onBack, onRestart,
 
   const { locale, currency } = result.assumptionsUsed;
   const scopeLabel = SCOPES_BY_ID[result.input.scope].label;
-  const costKnown = Number.isFinite(result.totals.costInr);
+  const costKnown = Number.isFinite(result.totals.cost);
 
   return (
     <div className="px-4 py-8 sm:px-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="label-eyebrow">Your estimate</p>
-          <h2 className="mt-1 text-xl font-bold text-navy sm:text-2xl">
+          <h2 className="mt-1 text-xl font-bold text-charcoal sm:text-2xl">
             {scopeLabel} · {result.input.floors}
           </h2>
           <p className="mt-1 text-sm text-grey">
@@ -79,7 +79,7 @@ export default function ResultView({ result, state, dispatch, onBack, onRestart,
         />
         <Stat
           label="Indicative cost"
-          value={costKnown ? formatCurrency(result.totals.costInr, { currency, locale }) : '—'}
+          value={costKnown ? formatCurrency(result.totals.cost, { currency, locale }) : '—'}
           sub={
             costKnown
               ? `at ${formatCurrency(result.totals.blendedRatePerTonne, { currency, locale })} per tonne`
@@ -109,7 +109,7 @@ export default function ResultView({ result, state, dispatch, onBack, onRestart,
       </div>
 
       {/* Print-only footer: the disclaimer must survive every export path. */}
-      <div className="print-only mt-6 border-t border-grey/30 pt-3">
+      <div className="print-only mt-6 border-t border-grey/40 pt-3">
         <Disclaimer text={result.assumptionsUsed.disclaimer} />
       </div>
     </div>

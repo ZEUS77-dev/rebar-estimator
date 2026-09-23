@@ -14,10 +14,17 @@
   }
 
   body {
-    @apply bg-grey-light font-sans text-navy antialiased;
-    background-image: radial-gradient(circle at 12% 0%, rgba(255, 94, 20, 0.07), transparent 42%),
-      radial-gradient(circle at 92% 8%, rgba(2, 36, 91, 0.06), transparent 38%);
+    @apply bg-grey-light font-sans text-charcoal antialiased;
+    background-image: radial-gradient(circle at 12% 0%, rgba(245, 130, 30, 0.07), transparent 42%),
+      radial-gradient(circle at 92% 8%, rgba(90, 170, 70, 0.07), transparent 38%);
     background-attachment: fixed;
+  }
+
+  /* The brand leads with light (300) display type — see cus_text60/48/42 on the
+     live site, which set font-weight:300 at every size above body copy. */
+  h1,
+  h2 {
+    @apply font-light;
   }
 
   /* Kill the spinner on number inputs - the unit toggle is the affordance here. */
@@ -32,42 +39,46 @@
 }
 
 @layer components {
+  /* The signature Jindal Steel Oman interaction: a solid orange button that
+     swaps to green on hover (.cus_btn2.orange:hover:before on the live site).
+     Not a gradient — that was the Panther skin. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-panther px-7 py-3
-           text-sm font-medium text-white shadow-lift transition
-           hover:bg-panther-hover focus:outline-none focus-visible:ring-2
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-primary
+           bg-primary px-7 py-3 text-sm font-medium text-white shadow-soft transition-colors
+           hover:border-green hover:bg-green focus:outline-none focus-visible:ring-2
            focus-visible:ring-primary focus-visible:ring-offset-2
-           disabled:cursor-not-allowed disabled:bg-none disabled:bg-grey/30 disabled:text-white/70 disabled:shadow-none;
+           disabled:cursor-not-allowed disabled:border-muted disabled:bg-muted
+           disabled:text-white/80 disabled:shadow-none;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-grey/30
-           bg-white px-7 py-3 text-sm font-medium text-navy transition
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-grey/40
+           bg-white px-7 py-3 text-sm font-medium text-charcoal transition-colors
            hover:border-primary hover:text-primary focus:outline-none
            focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
   }
 
   .card {
-    @apply rounded-2xl border border-grey/15 bg-white shadow-card;
+    @apply rounded-xl border border-grey-light bg-white shadow-card;
   }
 
   /* Shared look for the selectable tiles in steps 2, 3 and 4. */
   .tile {
-    @apply relative cursor-pointer rounded-xl border-2 border-grey/20 bg-white p-5 text-left
-           transition hover:border-primary/60 hover:shadow-card focus:outline-none
+    @apply relative cursor-pointer rounded-lg border-2 border-grey-light bg-white p-5 text-left
+           transition hover:border-primary/60 hover:shadow-soft focus:outline-none
            focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
   }
   .tile-selected {
-    @apply border-primary bg-primary/[0.04] shadow-lift;
+    @apply border-primary bg-primary/[0.05] shadow-soft;
   }
 
   .chip {
-    @apply rounded-full border border-grey/25 bg-white px-4 py-1.5 text-sm font-medium
-           text-grey transition hover:border-primary hover:text-primary focus:outline-none
-           focus-visible:ring-2 focus-visible:ring-primary;
+    @apply rounded-full border border-grey/40 bg-white px-4 py-1.5 text-sm font-medium
+           text-grey transition-colors hover:border-primary hover:text-primary
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-primary;
   }
   .chip-selected {
-    @apply border-primary bg-primary text-white hover:text-white;
+    @apply border-primary bg-primary text-white hover:bg-green hover:text-white;
   }
 
   .label-eyebrow {

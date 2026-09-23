@@ -12,8 +12,8 @@ export function buildSummary(result) {
   const money = (v) => formatCurrency(v, { currency, locale });
   const L = [];
 
-  L.push('JINDAL PANTHER — REBAR ESTIMATE');
-  L.push('================================');
+  L.push('JINDAL STEEL OMAN — REBAR ESTIMATE');
+  L.push('=================================');
   L.push('');
   L.push(`Ground floor area : ${formatArea(result.geometry.footprintSqFt, 'sqft', locale)}`);
   L.push(`Floors            : ${result.input.floors} (${result.geometry.levels} level(s))`);
@@ -23,7 +23,7 @@ export function buildSummary(result) {
   L.push('');
   L.push(`TOTAL TMT REBAR   : ${formatNumber(result.totals.tonnes, 3, locale)} tonnes`);
   L.push(`                    (${formatNumber(result.totals.grossKg, 0, locale)} kg)`);
-  L.push(`Indicative cost   : ${money(result.totals.costInr)}`);
+  L.push(`Indicative cost   : ${money(result.totals.cost)}`);
   L.push(
     `Steel intensity   : ${formatNumber(result.totals.kgPerSqFtBuiltUp, 2, locale)} kg/sq.ft of built-up area`,
   );
@@ -50,7 +50,7 @@ export function buildSummary(result) {
   L.push('--------');
   for (const g of result.byGrade) {
     L.push(
-      `  ${g.grade.padEnd(8)} ${formatNumber(g.tonnes, 3, locale)} t @ ${money(g.ratePerTonne)}/t  =  ${money(g.costInr)}`,
+      `  ${g.grade.padEnd(8)} ${formatNumber(g.tonnes, 3, locale)} t @ ${money(g.ratePerTonne)}/t  =  ${money(g.cost)}`,
     );
   }
   L.push('');

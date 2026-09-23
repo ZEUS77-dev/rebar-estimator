@@ -33,28 +33,30 @@ export const ExitIcon = (props) => (
 
 /* --------------------------------------------------------------- header -- */
 
+/** Charcoal band, because the only logo the brand ships is the white one —
+ *  #414042 is the same footer colour the live site sets it against. */
 export function BrandHeader({ onExit }) {
   return (
-    <header className="flex items-center justify-between gap-4 px-1 py-5">
-      <div className="flex items-center gap-3">
+    <header className="mt-4 flex items-center justify-between gap-4 rounded-xl bg-charcoal px-5 py-4">
+      <div className="flex items-center gap-4">
         {/* BASE_URL, not a bare "/", so the logo still resolves when the app is
             served from a GitHub Pages sub-path. */}
         <img
-          src={`${import.meta.env.BASE_URL}brand/panther-logo.png`}
-          alt="Jindal Panther TMT Rebars"
-          className="h-10 w-auto sm:h-12"
+          src={`${import.meta.env.BASE_URL}brand/jindal-steel-logo-white.svg`}
+          alt="Jindal Steel Oman"
+          className="h-11 w-auto sm:h-14"
         />
-        <span className="hidden h-8 w-px bg-grey/25 sm:block" />
+        <span className="hidden h-9 w-px bg-white/25 sm:block" />
         <div className="hidden sm:block">
-          <div className="text-sm font-medium leading-tight text-navy">Rebar Estimator</div>
-          <div className="text-xs leading-tight text-grey">Asli Sariya Ki Pehchaan</div>
+          <div className="text-sm font-medium leading-tight text-white">Rebar Estimator</div>
+          <div className="text-xs leading-tight text-muted">The Steel of Oman</div>
         </div>
       </div>
       {onExit && (
         <button
           type="button"
           onClick={onExit}
-          className="no-print inline-flex items-center gap-1.5 text-sm font-medium text-grey underline-offset-4 transition hover:text-primary hover:underline"
+          className="no-print inline-flex items-center gap-1.5 text-sm font-medium text-muted underline-offset-4 transition hover:text-white hover:underline"
         >
           Exit <ExitIcon className="h-4 w-4" />
         </button>
@@ -67,7 +69,7 @@ export function BrandHeader({ onExit }) {
 
 export function Stepper({ current }) {
   return (
-    <nav aria-label="Progress" className="no-print border-b border-grey/15 px-4 py-5 sm:px-8">
+    <nav aria-label="Progress" className="no-print border-b border-grey-light px-4 py-5 sm:px-8">
       <ol className="mx-auto flex max-w-3xl items-start">
         {STEPS.map((s, i) => {
           const done = current > s.n;
@@ -83,7 +85,7 @@ export function Stepper({ current }) {
                       ? 'bg-primary text-white'
                       : active
                         ? 'bg-primary text-white ring-4 ring-primary/20'
-                        : 'border border-grey/30 bg-white text-grey',
+                        : 'border border-grey/40 bg-white text-grey',
                   ].join(' ')}
                 >
                   {done ? <CheckIcon className="h-4 w-4" /> : s.n}
@@ -91,7 +93,7 @@ export function Stepper({ current }) {
                 <span
                   className={[
                     'w-20 text-center text-[11px] leading-tight sm:w-28 sm:text-xs',
-                    active ? 'font-semibold text-navy' : 'text-grey',
+                    active ? 'font-semibold text-charcoal' : 'text-grey',
                   ].join(' ')}
                 >
                   {s.label}
@@ -172,7 +174,7 @@ export function UnitToggle({ value, onChange }) {
     <div
       role="group"
       aria-label="Area unit"
-      className="inline-flex overflow-hidden rounded-lg border border-grey/25 bg-white"
+      className="inline-flex overflow-hidden rounded-lg border border-grey/40 bg-white"
     >
       {Object.entries(UNIT_LABELS).map(([id, label]) => (
         <button
@@ -197,11 +199,11 @@ export function NumberField({ value, onChange, prefix, error, ...rest }) {
     <div
       className={[
         'flex items-center overflow-hidden rounded-lg border bg-white transition',
-        error ? 'border-primary-700' : 'border-grey/25 focus-within:border-primary',
+        error ? 'border-primary' : 'border-grey/40 focus-within:border-primary',
       ].join(' ')}
     >
       {prefix && (
-        <span className="border-r border-grey/20 bg-grey-light px-3 py-3 text-sm text-grey">
+        <span className="border-r border-grey-light bg-grey-light px-3 py-3 text-sm text-grey">
           {prefix}
         </span>
       )}
@@ -210,7 +212,7 @@ export function NumberField({ value, onChange, prefix, error, ...rest }) {
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-4 py-3 text-center text-lg font-medium text-navy outline-none"
+        className="w-full px-4 py-3 text-center text-lg font-medium text-charcoal outline-none"
         {...rest}
       />
     </div>
@@ -221,7 +223,7 @@ export function NumberField({ value, onChange, prefix, error, ...rest }) {
 
 export function WizardNav({ onBack, onNext, nextLabel = 'Next', nextDisabled, backLabel = 'Back' }) {
   return (
-    <div className="no-print flex items-center justify-between gap-4 border-t border-grey/15 px-4 py-5 sm:px-8">
+    <div className="no-print flex items-center justify-between gap-4 border-t border-grey-light px-4 py-5 sm:px-8">
       {onBack ? (
         <button type="button" className="btn-ghost" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" /> {backLabel}
@@ -242,7 +244,7 @@ export function StepHeading({ eyebrow = 'Rebar Estimator', title, sub }) {
   return (
     <div className="text-center">
       <p className="label-eyebrow">{eyebrow}</p>
-      <h2 className="mt-2 text-xl font-bold text-navy sm:text-2xl">{title}</h2>
+      <h2 className="mt-2 text-xl font-bold text-charcoal sm:text-2xl">{title}</h2>
       {sub && <p className="mx-auto mt-2 max-w-xl text-sm text-grey">{sub}</p>}
     </div>
   );
@@ -251,7 +253,7 @@ export function StepHeading({ eyebrow = 'Rebar Estimator', title, sub }) {
 export function Disclaimer({ text, className = '' }) {
   return (
     <p className={`text-xs leading-relaxed text-grey ${className}`}>
-      <span className="font-semibold text-navy">Please note: </span>
+      <span className="font-semibold text-charcoal">Please note: </span>
       {text}
     </p>
   );

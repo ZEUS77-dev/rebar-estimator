@@ -39,27 +39,27 @@ const VALUE_PROPS = [
 function SiteIllustration() {
   return (
     <svg viewBox="0 0 220 180" className="h-full w-full" role="img" aria-label="Building under construction">
-      <circle cx="110" cy="86" r="78" fill="#FF5E14" opacity="0.07" />
+      <circle cx="110" cy="86" r="78" fill="#F5821E" opacity="0.07" />
       {/* crane */}
-      <g stroke="#02245B" strokeWidth="2.5" fill="none" strokeLinecap="round">
+      <g stroke="#414042" strokeWidth="2.5" fill="none" strokeLinecap="round">
         <path d="M30 150V34" />
         <path d="M18 34h84" />
         <path d="M30 34l22 22M30 56l22-22" strokeWidth="1.6" />
         <path d="M78 34v16" strokeWidth="1.6" />
       </g>
-      <rect x="70" y="50" width="16" height="10" fill="#FF5E14" rx="1.5" />
+      <rect x="70" y="50" width="16" height="10" fill="#F5821E" rx="1.5" />
       {/* building frame */}
-      <g fill="none" stroke="#02245B" strokeWidth="2.5">
+      <g fill="none" stroke="#414042" strokeWidth="2.5">
         <rect x="96" y="66" width="96" height="84" rx="2" fill="#FFFFFF" />
         <path d="M96 94h96M96 122h96M128 66v84M160 66v84" strokeWidth="1.4" />
       </g>
-      <rect x="99" y="69" width="26" height="22" fill="#FF5E14" opacity="0.18" />
-      <rect x="163" y="125" width="26" height="22" fill="#FF9900" opacity="0.22" />
+      <rect x="99" y="69" width="26" height="22" fill="#F5821E" opacity="0.18" />
+      <rect x="163" y="125" width="26" height="22" fill="#5AAA46" opacity="0.22" />
       {/* rebar bundle */}
-      <g stroke="#5F656F" strokeWidth="2.2" strokeLinecap="round">
+      <g stroke="#6D6E71" strokeWidth="2.2" strokeLinecap="round">
         <path d="M24 150h56M28 156h52M32 162h44" />
       </g>
-      <path d="M8 168h204" stroke="#02245B" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M8 168h204" stroke="#414042" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -76,13 +76,13 @@ export default function StepArea({ state, dispatch, onNext, assumptions = DEFAUL
         </div>
 
         <div>
-          <h1 className="text-2xl font-bold text-navy sm:text-3xl">Rebar Estimator</h1>
+          <h1 className="text-2xl font-bold text-charcoal sm:text-3xl">Rebar Estimator</h1>
           <p className="mt-2 text-sm text-grey">
             Accurate, hassle-free rebar calculations for slabs, beams, columns, and more.
           </p>
 
-          <h2 className="mt-7 text-lg font-semibold text-navy">Ground floor area</h2>
-          <p className="mt-1 text-xs text-grey">{areaRangeHint(state.unit, assumptions)}</p>
+          <h2 className="mt-7 text-lg font-semibold text-charcoal">Ground floor area</h2>
+          <p className="mt-1 text-xs text-grey">{areaRangeHint()}</p>
 
           <div className="mt-3 flex flex-wrap items-start gap-3">
             <div className="min-w-[180px] flex-1">
@@ -106,7 +106,7 @@ export default function StepArea({ state, dispatch, onNext, assumptions = DEFAUL
           </div>
 
           {touched && error && (
-            <p role="alert" className="mt-2 text-xs font-medium text-primary-700">
+            <p role="alert" className="mt-2 text-xs font-medium text-primary">
               {error.message}
             </p>
           )}
@@ -119,7 +119,7 @@ export default function StepArea({ state, dispatch, onNext, assumptions = DEFAUL
 
       <div className="mt-10 grid gap-4 sm:grid-cols-3">
         {VALUE_PROPS.map((p) => (
-          <div key={p.title} className="rounded-xl border border-grey/15 bg-white p-4">
+          <div key={p.title} className="rounded-xl border border-grey-light bg-white p-4">
             <div className="flex items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
@@ -127,7 +127,7 @@ export default function StepArea({ state, dispatch, onNext, assumptions = DEFAUL
                 </svg>
               </span>
               <div>
-                <h3 className="text-sm font-semibold text-navy">{p.title}</h3>
+                <h3 className="text-sm font-semibold text-charcoal">{p.title}</h3>
                 <p className="mt-1 text-xs leading-relaxed text-grey">{p.body}</p>
               </div>
             </div>

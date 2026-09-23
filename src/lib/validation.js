@@ -1,13 +1,16 @@
 /** Input validation for the wizard and the engine.
- *  Errors block; warnings are advisory and never stop a calculation. */
+ *  Errors block; warnings are advisory and never stop a calculation.
+ *
+ *  There is deliberately no fixed area range. Any positive area is accepted and
+ *  rounded; an unusual one earns a warning on the result screen, not a block. */
 
 import { DEFAULT_ASSUMPTIONS } from '../data/assumptions.js';
-import { EPS, normalizeArea, sqftToSqm, formatNumber } from './units.js';
+import { normalizeArea, formatNumber } from './units.js';
 
 export const ERROR_CODES = {
   REQUIRED: 'REQUIRED',
   NOT_A_NUMBER: 'NOT_A_NUMBER',
-  OUT_OF_RANGE: 'OUT_OF_RANGE',
+  NOT_POSITIVE: 'NOT_POSITIVE',
   UNKNOWN_FLOORS: 'UNKNOWN_FLOORS',
   UNKNOWN_SCOPE: 'UNKNOWN_SCOPE',
 };
@@ -15,20 +18,21 @@ export const ERROR_CODES = {
 export const WARNING_CODES = {
   PLAN_AREA_MISMATCH: 'PLAN_AREA_MISMATCH',
   PLAN_NOT_SELECTED: 'PLAN_NOT_SELECTED',
+  ATYPICAL_AREA: 'ATYPICAL_AREA',
   ATYPICAL_GRADE: 'ATYPICAL_GRADE',
   MIX_NORMALISED: 'MIX_NORMALISED',
+  AREA_ROUNDED: 'AREA_ROUNDED',
 };
 
-/** Area bounds expressed in whichever unit the field is currently showing. */
-export function areaLimitsFor(unit, assumptions = DEFAULT_ASSUMPTIONS) {
-  const { min, max } = assumptions.areaLimitsSqFt;
-  return unit === 'sqm' ? { min: sqftToSqm(min), max: sqftToSqm(max) } : { min, max };
+/** Round the footprint to the nearest whole sq.ft. A hand-measured plot does not
+ *  carry three decimal places of meaning, and the estimate is a thumb rule. */
+export function roundAreaSqFt(sqft, assumptions = DEFAULT_ASSUMPTIONS) {
+  const step = assumptions.areaRoundingSqFt || 1;
+  return Math.round(sqft / step) * step;
 }
 
-export function areaRangeHint(unit, assumptions = DEFAULT_ASSUMPTIONS) {
-  const { min, max } = areaLimitsFor(unit, assumptions);
-  const suffix = unit === 'sqm' ? 'sq. mts.' : 'sq. ft.';
-  return `Enter area between ${formatNumber(min, 2)} ${suffix} – ${formatNumber(max, 2)} ${suffix}`;
+export function areaRangeHint() {
+  return 'Enter the built footprint of the ground floor.';
 }
 
 /** Validate the area field alone - used live by step 1 to gate Next. */
@@ -40,25 +44,19 @@ export function validateArea(raw, unit = 'sqft', assumptions = DEFAULT_ASSUMPTIO
   if (!Number.isFinite(n)) {
     return { code: ERROR_CODES.NOT_A_NUMBER, message: 'Enter a valid number.' };
   }
-  const sqft = normalizeArea(n, unit);
-  const { min, max } = assumptions.areaLimitsSqFt;
-  if (sqft < min - EPS || sqft > max + EPS) {
-    const lim = areaLimitsFor(unit, assumptions);
-    const suffix = unit === 'sqm' ? 'sq. mts.' : 'sq. ft.';
-    return {
-      code: ERROR_CODES.OUT_OF_RANGE,
-      message: `Area must be between ${formatNumber(lim.min, 2)} and ${formatNumber(
-        lim.max,
-        2,
-      )} ${suffix} (${formatNumber(min, 2)} – ${formatNumber(max, 2)} sq. ft.).`,
-    };
+  if (n <= 0) {
+    return { code: ERROR_CODES.NOT_POSITIVE, message: 'Area must be greater than zero.' };
+  }
+  // Rounding means anything under half a sq.ft would collapse to zero.
+  if (normalizeArea(n, unit) < 0.5) {
+    return { code: ERROR_CODES.NOT_POSITIVE, message: 'That area is too small to estimate.' };
   }
   return null;
 }
 
 /** Full engine-input check. Returns { errors, warnings }. */
 export function validateInput(
-  { areaSqFt, areaUnit = 'sqft', floors, scope, plan },
+  { areaSqFt, areaUnit = 'sqft', floors, plan },
   assumptions = DEFAULT_ASSUMPTIONS,
 ) {
   const errors = [];
@@ -75,21 +73,52 @@ export function validateInput(
     });
   }
 
+  if (errors.length) return { errors, warnings };
+
+  const entered = normalizeArea(areaSqFt, areaUnit);
+  const rounded = roundAreaSqFt(entered, assumptions);
+
+  if (Math.abs(rounded - entered) > 1e-9) {
+    warnings.push({
+      code: WARNING_CODES.AREA_ROUNDED,
+      message: `Area rounded from ${formatNumber(entered, 2)} to ${formatNumber(
+        rounded,
+        0,
+      )} sq. ft. for the estimate.`,
+    });
+  }
+
+  const { min, max } = assumptions.typicalAreaSqFt;
+  if (rounded < min || rounded > max) {
+    warnings.push({
+      code: WARNING_CODES.ATYPICAL_AREA,
+      message: `${formatNumber(
+        rounded,
+        0,
+      )} sq. ft. is outside the usual ${formatNumber(min, 0)}–${formatNumber(
+        max,
+        0,
+      )} sq. ft. residential floor plate. The thumb rules behind this estimate are calibrated for low-rise housing, so treat the result with extra caution.`,
+    });
+  }
+
   if (!plan) {
     warnings.push({
       code: WARNING_CODES.PLAN_NOT_SELECTED,
       message: 'No floor plan selected — layout complexity factor assumed 1.00.',
     });
-  } else if (Number.isFinite(Number(areaSqFt))) {
-    const entered = normalizeArea(areaSqFt, areaUnit);
-    const deviation = Math.abs(plan.areaSqFt - entered) / entered;
+  } else {
+    const deviation = Math.abs(plan.areaSqFt - rounded) / rounded;
     if (deviation > 0.25) {
       warnings.push({
         code: WARNING_CODES.PLAN_AREA_MISMATCH,
         message: `Selected plan is ${formatNumber(plan.areaSqFt, 2)} sq. ft., ${formatNumber(
           deviation * 100,
           0,
-        )}% away from the ${formatNumber(entered, 2)} sq. ft. you entered. Your entered area is used for the estimate.`,
+        )}% away from the ${formatNumber(
+          rounded,
+          0,
+        )} sq. ft. you entered. Your entered area is used for the estimate.`,
       });
     }
   }

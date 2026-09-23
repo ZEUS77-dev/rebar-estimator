@@ -1,6 +1,6 @@
 /** TMT bar physical constants.
  *  Nominal unit weight per IS 1786: kg/m = d^2 / 162.
- *  Jindal Panther rolls 6-50 mm; 8-25 mm is the working set for residential G to G+2. */
+ *  8-25 mm is the working set for residential G to G+2 construction. */
 
 export const BAR_LENGTH_M = 12;
 

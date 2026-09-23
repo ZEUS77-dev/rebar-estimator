@@ -10,20 +10,20 @@ function HouseIcon({ levels }) {
 
   return (
     <svg viewBox="0 0 72 64" className="h-16 w-full" role="img" aria-hidden="true">
-      <rect x="18" y={top} width="36" height={bodyH} rx="1.5" fill="#FFFFFF" stroke="#02245B" strokeWidth="2" />
-      <path d={`M14 ${top} L36 ${top - 11} L58 ${top} Z`} fill="#FF5E14" opacity="0.9" />
+      <rect x="18" y={top} width="36" height={bodyH} rx="1.5" fill="#FFFFFF" stroke="#414042" strokeWidth="2" />
+      <path d={`M14 ${top} L36 ${top - 11} L58 ${top} Z`} fill="#F5821E" opacity="0.9" />
       {Array.from({ length: levels }, (_, i) => {
         const y = top + i * floorH;
         return (
           <g key={i}>
-            {i > 0 && <path d={`M18 ${y}h36`} stroke="#5F656F" strokeWidth="1" />}
-            <rect x="23" y={y + 4.5} width="8" height="7" fill="#FF9900" opacity="0.35" stroke="#5F656F" strokeWidth="0.8" />
-            <rect x="41" y={y + 4.5} width="8" height="7" fill="#FF9900" opacity="0.35" stroke="#5F656F" strokeWidth="0.8" />
+            {i > 0 && <path d={`M18 ${y}h36`} stroke="#6D6E71" strokeWidth="1" />}
+            <rect x="23" y={y + 4.5} width="8" height="7" fill="#5AAA46" opacity="0.35" stroke="#6D6E71" strokeWidth="0.8" />
+            <rect x="41" y={y + 4.5} width="8" height="7" fill="#5AAA46" opacity="0.35" stroke="#6D6E71" strokeWidth="0.8" />
           </g>
         );
       })}
-      <rect x="32" y="48" width="8" height="10" fill="#02245B" opacity="0.15" stroke="#02245B" strokeWidth="1" />
-      <path d="M4 58h64" stroke="#02245B" strokeWidth="2" strokeLinecap="round" />
+      <rect x="32" y="48" width="8" height="10" fill="#414042" opacity="0.15" stroke="#414042" strokeWidth="1" />
+      <path d="M4 58h64" stroke="#414042" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -46,7 +46,7 @@ export default function StepFloors({ state, dispatch }) {
           >
             <HouseIcon levels={f.levels} />
             <div>
-              <div className="text-base font-semibold text-navy">{f.label}</div>
+              <div className="text-base font-semibold text-charcoal">{f.label}</div>
               <div className="mt-0.5 text-xs text-grey">{f.blurb}</div>
             </div>
           </Tile>

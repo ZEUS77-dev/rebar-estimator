@@ -1,35 +1,35 @@
-/** Jindal Panther brand tokens, lifted from the live site's own stylesheets:
- *  app.min.css Bootstrap overrides (--bs-primary/-secondary/-dark) and
- *  update-css-060226.css (.themeColor gradient, heading orange). */
+/** Jindal Steel Oman brand tokens, lifted from the live site's own compiled CSS
+ *  (jindalsteel.om) and from jindal-steel-logo-white.svg.
+ *
+ *  Note there is no navy in this brand — the "dark" is a warm charcoal. And the
+ *  signature interaction is an orange button that turns green on hover, not a
+ *  gradient. Both differ from the Jindal Panther (India) skin this replaced. */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: '#FF5E14', // --bs-primary
-          600: '#FF6C00',
-          700: '#E54000',
-          800: '#CC4B10',
-          900: '#99380C',
-        },
-        amber: { DEFAULT: '#F47A20', light: '#FFAA31', bright: '#FF9900' },
-        navy: { DEFAULT: '#02245B', deep: '#011637', slate: '#1E2B3B' }, // --bs-dark
-        grey: { DEFAULT: '#5F656F', light: '#F5F5F5' }, // --bs-secondary / --bs-light
-        ink: '#414040',
+        // Primary — Jindal Orange. rgb(245 130 30) in the site's Tailwind build;
+        // the logo SVG uses #F58220 and inline SVG strokes use #F47920.
+        primary: { DEFAULT: '#F5821E', logo: '#F58220', stroke: '#F47920' },
+        // Secondary — Jindal Green. rgb(90 170 70).
+        green: { DEFAULT: '#5AAA46', logo: '#58AB40' },
+        // Dark — footer background and body text. rgb(65 64 66).
+        charcoal: { DEFAULT: '#414042', line: '#47494E' },
+        // Neutrals
+        muted: '#A7A9AC', // rgb(167 169 172) — secondary text, icons
+        grey: { DEFAULT: '#6D6E71', light: '#E5E5E6' }, // quaternary / tertiary
+        offwhite: '#F7F7F7', // logo wordmark
       },
       fontFamily: {
-        sans: ['Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        alt: ['Open Sans', 'Roboto', 'sans-serif'],
-      },
-      backgroundImage: {
-        // .themeColor from update-css-060226.css
-        'panther': 'linear-gradient(180deg, #FF9900 15.62%, #FF6C00 100%)',
-        'panther-hover': 'linear-gradient(270.73deg, #FF6C00 -26.35%, #FF9900 73.64%)',
+        // Self-hosted Roboto on the live site; loaded from Google Fonts here.
+        sans: ['Roboto', 'Arial', 'Helvetica Neue', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 1px 3px rgba(2,36,91,0.08), 0 8px 24px rgba(2,36,91,0.06)',
-        lift: '0 4px 12px rgba(255,94,20,0.22)',
+        // Verbatim from the site's Tailwind build.
+        card: '0px 4px 8px 0px rgba(0,0,0,0.15)',
+        soft: '1px 2px 4px 0px rgba(0,0,0,0.15)',
+        lift: '2px 4px 4px 0px rgba(0,0,0,0.15)',
       },
     },
   },

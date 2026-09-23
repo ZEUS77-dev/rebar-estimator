@@ -1,17 +1,17 @@
 # Rebar Estimator — prototype
 
-A working prototype of the Jindal Panther **Rebar Estimator**: a four-step wizard that turns a
-ground floor area into an indicative TMT rebar requirement and cost.
+A working prototype of the **Jindal Steel Oman Rebar Estimator**: a four-step wizard that turns a
+ground floor area into an indicative rebar requirement and cost.
 
-The live `jindalpanther.com/tmt-calculator` page is currently a "Coming Soon" placeholder. This
-fills it in so the flow, the numbers and the brand skin can be reviewed before a production build.
+It exists so the flow, the numbers and the brand skin can be reviewed before a production build.
+Skinned from jindalsteel.om — orange `#F5821E`, green `#5AAA46`, charcoal `#414042`, Roboto.
 
 ## Run it
 
 ```
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 47 tests: 35 engine, 12 render
+npm test         # 50 tests: 38 engine, 12 render
 npm run build    # production bundle into dist/
 ```
 
@@ -38,10 +38,10 @@ Both are already worked around in the repo; they only matter if you re-clone or 
 
 | Step | Screen |
 |---|---|
-| 1 | Ground floor area, 578.00 – 1934.00 sq. ft., with a Sq. Ft / Sq. Mts toggle |
+| 1 | Ground floor area — any positive value, rounded to whole sq. ft, with a Sq. Ft / Sq. Mts toggle |
 | 2 | Ground / G+1 / G+2 |
 | 3 | Floor plan gallery with BHK filter chips |
-| 4 | Full House, or a single element — slab, beam, column, footing — plus an optional TMT grade |
+| 4 | Full House, or a single element — slab, beam, column, footing — plus an optional rebar grade |
 | → | Result: diameter-wise quantity, editable cost, element split, assumptions, print and share |
 
 ## How the estimate is built
@@ -65,20 +65,31 @@ Scaling with floors is deliberately not uniform:
   for G / G+1 / G+2;
 - each level's columns are sized for **what sits above them** — `1 + 0.15 × storeysAbove`.
 
+There is **no fixed area range** — any positive area is accepted. The entered footprint is rounded
+to the nearest whole sq. ft (`areaRoundingSqFt`), and an area outside the usual residential band
+earns a warning on the result screen rather than a block.
+
 Wastage 3% and lap 5% give a combined ×1.0815. The selected floor plan contributes a layout
 complexity factor (2BHK 1.00, 3BHK 1.04, 4BHK 1.08) applied to beams, columns and misc only — the
 **area you type always wins** over the plan's own area.
 
-Grade (Fe500D / Fe550D / Fe600 / CRS) changes the rate and the label, **never the weight** —
-weight is geometry.
+Grade changes the rate and the label, **never the weight** — weight is geometry. The range is the
+one Jindal Steel Oman rolls: **B500B** (BS 4449); **ASTM A615** Gr-40/60/75; **ASTM A706** Gr-60/80
+(earthquake resistant); **ASTM A1035** (corrosion resistant, for coastal and saline ground); and
+air-cooled rebar. A615 Gr-60 is the default throughout as the residential workhorse.
 
 Bar counts use the IS 1786 nominal unit weight, `kg/m = d²/162`, over 12 m stock lengths.
 
-Worked example — 1356.25 sq.ft, G+1, 2BHK, Full House:
+Worked example — 1356.25 sq.ft entered, G+1, 2BHK, Full House:
 
 ```
-10.517 t gross · 3.88 kg/sq.ft of built-up area · ₹6,63,251 at default grade-wise rates
+footprint rounded to 1,356 sq.ft · 2,712 sq.ft built-up
+10.515 t gross · 3.88 kg/sq.ft of built-up area · $6,519 at the placeholder rate
 ```
+
+> **The rates are placeholders.** `ratePerTonne` holds indicative USD figures, not quoted prices,
+> and `ratesArePlaceholder: true` flags that. Replace them with real commercial rates before this
+> is shown to anyone outside the review.
 
 ## Where things live
 
@@ -87,8 +98,8 @@ src/data/assumptions.js     every number a reviewer might argue with, in one obj
 src/data/barConstants.js    diameters, 12 m length, d²/162
 src/data/floorPlans.js      the 8 gallery plans and their room rectangles
 src/lib/estimator.js        the engine — estimate() and recost()
-src/lib/estimator.test.js   35 engine tests
-src/lib/validation.js       range checks, error and warning codes
+src/lib/estimator.test.js   38 engine tests
+src/lib/validation.js       area rounding, error and warning codes
 src/lib/units.js            sq.ft ⇄ sq.m, kg ⇄ t, currency formatting
 src/lib/share.js            text summary, clipboard, download, print
 src/hooks/useEstimator.js   wizard state plus the memoised engine call
@@ -107,8 +118,8 @@ storey factors, wastage and lap, grade defaults, and the rate table. The result 
 **Assumptions used** panel prints whatever is in there, so a reviewer can see exactly which knob to
 turn.
 
-The currency block (`currency`, `locale`, `currencySymbol`, `ratePerTonne`) is one unit — swap it
-for OMR if this is aimed at the Oman market rather than Jindal Panther India.
+The currency block (`currency`, `locale`, `currencySymbol`, `ratePerTonne`) is one unit — swap USD
+for OMR, or any other market, by editing that block alone.
 
 ## Not a structural design
 

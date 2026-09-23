@@ -23,7 +23,7 @@ import {
   lengthMFromKg,
 } from '../data/barConstants.js';
 import { normalizeArea, kgToTonne, round } from './units.js';
-import { validateInput, WARNING_CODES } from './validation.js';
+import { validateInput, roundAreaSqFt, WARNING_CODES } from './validation.js';
 
 const isDev = () => {
   try {
@@ -119,10 +119,7 @@ export function estimate({
   assumptions = DEFAULT_ASSUMPTIONS,
   overrides = {},
 } = {}) {
-  const { errors, warnings } = validateInput(
-    { areaSqFt, areaUnit, floors, scope, plan },
-    assumptions,
-  );
+  const { errors, warnings } = validateInput({ areaSqFt, areaUnit, floors, plan }, assumptions);
   if (errors.length) return { ok: false, errors, warnings };
 
   const scopeDef = SCOPES_BY_ID[scope];
@@ -134,7 +131,8 @@ export function estimate({
     };
   }
 
-  const A = normalizeArea(areaSqFt, areaUnit);
+  // Rounded, per assumptions.areaRoundingSqFt — validateInput already warned if it moved.
+  const A = roundAreaSqFt(normalizeArea(areaSqFt, areaUnit), assumptions);
   const levels = FLOORS_BY_ID[floors].levels;
   const builtUpSqFt = A * levels;
   const planFactor =
@@ -151,11 +149,11 @@ export function estimate({
   const rates = { ...assumptions.ratePerTonne, ...(overrides.ratePerTonne || {}) };
   const gradeFor = (el) => overrides.grade || assumptions.gradeByElement[el];
 
-  if (overrides.grade === 'Fe600') {
+  if (overrides.grade === 'A1035') {
     warnings.push({
       code: WARNING_CODES.ATYPICAL_GRADE,
       message:
-        'Fe600 is atypical for G to G+2 residential. Weight is unchanged — only the rate and the label differ.',
+        'A1035 is a corrosion-resistant alloy specified for coastal or saline ground. Weight is unchanged — only the rate and the label differ.',
     });
   }
 
@@ -177,7 +175,7 @@ export function estimate({
       grossKg,
       tonnes: kgToTonne(grossKg),
       ratePerTonne,
-      costInr: kgToTonne(grossKg) * ratePerTonne,
+      cost: kgToTonne(grossKg) * ratePerTonne,
       byDiameter,
     };
   });
@@ -226,11 +224,11 @@ export function estimate({
   const byGrade = Object.values(gradeMap).map((g) => ({
     ...g,
     tonnes: kgToTonne(g.kg),
-    costInr: kgToTonne(g.kg) * g.ratePerTonne,
+    cost: kgToTonne(g.kg) * g.ratePerTonne,
   }));
 
   const tonnes = kgToTonne(grossKg);
-  const costInr = byGrade.reduce((a, g) => a + g.costInr, 0);
+  const cost = byGrade.reduce((a, g) => a + g.cost, 0);
 
   return {
     ok: true,
@@ -252,8 +250,8 @@ export function estimate({
       grossKg,
       tonnes,
       kgPerSqFtBuiltUp: builtUpSqFt ? grossKg / builtUpSqFt : 0,
-      costInr,
-      blendedRatePerTonne: tonnes ? costInr / tonnes : 0,
+      cost,
+      blendedRatePerTonne: tonnes ? cost / tonnes : 0,
     },
     byElement,
     byDiameter,
@@ -284,15 +282,15 @@ export function recost(result, ratePerTonne) {
   const blank = ratePerTonne === '' || ratePerTonne === null || ratePerTonne === undefined;
   const rate = blank ? NaN : Number(ratePerTonne);
   if (!Number.isFinite(rate)) {
-    return { ...result, totals: { ...result.totals, costInr: NaN, blendedRatePerTonne: NaN } };
+    return { ...result, totals: { ...result.totals, cost: NaN, blendedRatePerTonne: NaN } };
   }
   return {
     ...result,
-    byElement: result.byElement.map((e) => ({ ...e, ratePerTonne: rate, costInr: e.tonnes * rate })),
-    byGrade: result.byGrade.map((g) => ({ ...g, ratePerTonne: rate, costInr: g.tonnes * rate })),
+    byElement: result.byElement.map((e) => ({ ...e, ratePerTonne: rate, cost: e.tonnes * rate })),
+    byGrade: result.byGrade.map((g) => ({ ...g, ratePerTonne: rate, cost: g.tonnes * rate })),
     totals: {
       ...result.totals,
-      costInr: result.totals.tonnes * rate,
+      cost: result.totals.tonnes * rate,
       blendedRatePerTonne: rate,
     },
   };

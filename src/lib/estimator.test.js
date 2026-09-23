@@ -131,20 +131,39 @@ describe('scope', () => {
 });
 
 describe('units and validation', () => {
-  it('treats 100 sq.m the same as 1076.39 sq.ft', () => {
+  it('treats 100 sq.m the same as its sq.ft equivalent', () => {
     const a = estimate({ ...base, areaSqFt: 100, areaUnit: 'sqm' });
     const b = estimate({ ...base, areaSqFt: 100 * SQFT_PER_SQM, areaUnit: 'sqft' });
+    expect(a.geometry.footprintSqFt).toBe(b.geometry.footprintSqFt);
     expect(a.totals.grossKg).toBeCloseTo(b.totals.grossKg, 6);
   });
 
-  it('accepts the exact bounds', () => {
-    expect(estimate({ ...base, areaSqFt: 578.0 }).ok).toBe(true);
-    expect(estimate({ ...base, areaSqFt: 1934.0 }).ok).toBe(true);
+  it('accepts any positive area - there is no fixed range', () => {
+    for (const a of [1, 200, 578, 1934, 6000, 50000]) {
+      expect(estimate({ ...base, areaSqFt: a }).ok, `${a} sq.ft`).toBe(true);
+    }
   });
 
-  it('rejects just outside the bounds', () => {
-    expect(estimate({ ...base, areaSqFt: 577.99 }).ok).toBe(false);
-    expect(estimate({ ...base, areaSqFt: 1934.01 }).ok).toBe(false);
+  it('rejects zero and negative area', () => {
+    expect(estimate({ ...base, areaSqFt: 0 }).errors[0].code).toBe('NOT_POSITIVE');
+    expect(estimate({ ...base, areaSqFt: -5 }).errors[0].code).toBe('NOT_POSITIVE');
+  });
+
+  it('rounds the footprint to whole sq.ft and says so', () => {
+    const r = estimate({ ...base, areaSqFt: 1356.25 });
+    expect(r.geometry.footprintSqFt).toBe(1356);
+    expect(r.warnings.map((w) => w.code)).toContain('AREA_ROUNDED');
+  });
+
+  it('does not warn about rounding when the area is already whole', () => {
+    const r = estimate({ ...base, areaSqFt: 1356 });
+    expect(r.warnings.map((w) => w.code)).not.toContain('AREA_ROUNDED');
+  });
+
+  it('warns about an unusual floor plate without blocking it', () => {
+    const r = estimate({ ...base, areaSqFt: 40000 });
+    expect(r.ok).toBe(true);
+    expect(r.warnings.map((w) => w.code)).toContain('ATYPICAL_AREA');
   });
 
   it('rejects blank and non-numeric area', () => {
@@ -211,28 +230,28 @@ describe('cost', () => {
       (a, g) => a + g.tonnes * DEFAULT_ASSUMPTIONS.ratePerTonne[g.grade],
       0,
     );
-    expect(r.totals.costInr).toBeCloseTo(expected, 4);
+    expect(r.totals.cost).toBeCloseTo(expected, 4);
   });
 
   it('recost changes money without touching tonnage', () => {
     const r = estimate(base);
     const re = recost(r, 70000);
     expect(re.totals.tonnes).toBe(r.totals.tonnes);
-    expect(re.totals.costInr).toBeCloseTo(r.totals.tonnes * 70000, 4);
+    expect(re.totals.cost).toBeCloseTo(r.totals.tonnes * 70000, 4);
     expect(re.totals.blendedRatePerTonne).toBe(70000);
     expect(re.byDiameter).toBe(r.byDiameter);
   });
 
   it('recost with a blank rate yields NaN, not zero', () => {
     const re = recost(estimate(base), '');
-    expect(Number.isNaN(re.totals.costInr)).toBe(true);
+    expect(Number.isNaN(re.totals.cost)).toBe(true);
   });
 
   it('changes cost but not weight when the grade is overridden', () => {
     const a = estimate(base);
-    const b = estimate({ ...base, overrides: { grade: 'Fe600' } });
+    const b = estimate({ ...base, overrides: { grade: 'A1035' } });
     expect(b.totals.grossKg).toBeCloseTo(a.totals.grossKg, 6);
-    expect(b.totals.costInr).not.toBeCloseTo(a.totals.costInr, 2);
+    expect(b.totals.cost).not.toBeCloseTo(a.totals.cost, 2);
     expect(b.warnings.map((w) => w.code)).toContain('ATYPICAL_GRADE');
   });
 });
@@ -240,7 +259,7 @@ describe('cost', () => {
 describe('spot check from the mockup', () => {
   it('1356.25 sq.ft, G+1, 2BHK, full house is about 10.5 t', () => {
     const r = estimate(base);
-    expect(r.geometry.builtUpSqFt).toBeCloseTo(2712.5, 4);
+    expect(r.geometry.builtUpSqFt).toBe(2712);
     expect(r.totals.tonnes).toBeGreaterThan(10);
     expect(r.totals.tonnes).toBeLessThan(11);
   });
