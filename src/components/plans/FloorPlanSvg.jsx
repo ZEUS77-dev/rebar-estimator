@@ -2,7 +2,11 @@
  *
  *  The brief shipped no plan images, so each entry in floorPlans.js carries its
  *  rooms on a 0-100 grid and this renders them in the thin-line look of an
- *  architectural drawing. Labels are dropped automatically when a room is too
+ *  architectural drawing.
+ *
+ *  Every colour resolves through the theme variables rather than a literal hex,
+ *  so the drawing follows the day/night switch instead of staying dark on the
+ *  daylight ground. Labels are dropped automatically when a room is too
  *  small to hold them, which is what keeps the small gallery thumbnails legible. */
 
 const VB = 100;
@@ -24,8 +28,8 @@ export default function FloorPlanSvg({ plan, compact = false, className = '' }) 
         y="0"
         width={VB}
         height={VB}
-        fill="#131519"
-        stroke="#F5821E"
+        fill="rgb(var(--c-panel))"
+        stroke="rgb(var(--c-molten))"
         strokeWidth="1.2"
         rx="0.5"
       />
@@ -45,8 +49,8 @@ export default function FloorPlanSvg({ plan, compact = false, className = '' }) 
               y={r.y}
               width={r.w}
               height={r.h}
-              fill={i % 2 === 0 ? 'rgba(255,255,255,0.022)' : 'rgba(255,255,255,0.05)'}
-              stroke="#2C313A"
+              fill={i % 2 === 0 ? 'rgb(var(--c-base))' : 'rgb(var(--c-raised))'}
+              stroke="rgb(var(--c-line))"
               strokeWidth="0.7"
             />
             {showLabel && (
@@ -57,7 +61,7 @@ export default function FloorPlanSvg({ plan, compact = false, className = '' }) 
                 fontSize={fontSize}
                 fontFamily="'Martian Mono', monospace"
                 fontWeight="500"
-                fill="#8D95A1"
+                fill="rgb(var(--c-dim))"
                 letterSpacing="0"
               >
                 {r.label}
@@ -70,7 +74,7 @@ export default function FloorPlanSvg({ plan, compact = false, className = '' }) 
                 textAnchor="middle"
                 fontSize={fontSize - 0.7}
                 fontFamily="'Martian Mono', monospace"
-                fill="#5A6270"
+                fill="rgb(var(--c-dim) / 0.85)"
               >
                 {r.dim}
               </text>
@@ -80,7 +84,7 @@ export default function FloorPlanSvg({ plan, compact = false, className = '' }) 
       })}
 
       {/* entry mark on the bottom wall */}
-      <path d="M46 100 A 6 6 0 0 1 54 100" fill="none" stroke="#F5821E" strokeWidth="1.1" />
+      <path d="M46 100 A 6 6 0 0 1 54 100" fill="none" stroke="rgb(var(--c-molten))" strokeWidth="1.1" />
     </svg>
   );
 }

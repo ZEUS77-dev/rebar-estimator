@@ -492,3 +492,21 @@ describe('wizard nav', () => {
     expect(html).toContain('disabled');
   });
 });
+
+describe('drawings follow the theme', () => {
+  it('draws floor plans from theme variables, never literal colours', () => {
+    for (const plan of FLOOR_PLANS) {
+      const html = renderToString(<FloorPlanSvg plan={plan} />);
+      expect(html, plan.id).toContain('var(--c-');
+      // A baked-in hex here means the drawing stays dark on the light ground.
+      expect(html, plan.id).not.toMatch(/(?:fill|stroke)="#[0-9A-Fa-f]{3,8}"/);
+      expect(html, plan.id).not.toMatch(/(?:fill|stroke)="rgba\(/);
+    }
+  });
+
+  it('draws the storey icons from theme variables too', () => {
+    const html = renderToString(<StepFloors state={state} dispatch={noop} />);
+    expect(html).toContain('var(--c-');
+    expect(html).not.toMatch(/(?:fill|stroke)="#[0-9A-Fa-f]{3,8}"/);
+  });
+});

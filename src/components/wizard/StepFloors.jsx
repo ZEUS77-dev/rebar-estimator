@@ -3,6 +3,8 @@ import { FLOOR_OPTIONS } from '../../data/assumptions.js';
 
 /** A house drawn with `levels` storeys, so the three tiles differ visually
  *  rather than all sharing one generic icon. */
+/** Theme-aware: colours come from the CSS variables, so the icon is legible on
+ *  both grounds. */
 function HouseIcon({ levels }) {
   const floorH = 15;
   const bodyH = floorH * levels;
@@ -10,22 +12,22 @@ function HouseIcon({ levels }) {
 
   return (
     <svg viewBox="0 0 72 64" className="h-16 w-full" role="img" aria-hidden="true">
-      <rect x="18" y={top} width="36" height={bodyH} rx="1" fill="#1B1E24" stroke="#2C313A" strokeWidth="1.4" />
-      <path d={`M14 ${top} L36 ${top - 10} L58 ${top} Z`} fill="none" stroke="#F5821E" strokeWidth="1.6" strokeLinejoin="round" />
+      <rect x="18" y={top} width="36" height={bodyH} rx="1" fill="rgb(var(--c-raised))" stroke="rgb(var(--c-line))" strokeWidth="1.4" />
+      <path d={`M14 ${top} L36 ${top - 10} L58 ${top} Z`} fill="none" stroke="rgb(var(--c-molten))" strokeWidth="1.6" strokeLinejoin="round" />
       {Array.from({ length: levels }, (_, i) => {
         const y = top + i * floorH;
         // The slab line between storeys is the thing that repeats per level.
         return (
           <g key={i}>
-            {i > 0 && <path d={`M18 ${y}h36`} stroke="#F5821E" strokeWidth="1" opacity="0.5" />}
-            <rect x="23" y={y + 4} width="7" height="6" fill="#F5821E" opacity="0.22" />
-            <rect x="42" y={y + 4} width="7" height="6" fill="#F5821E" opacity="0.22" />
+            {i > 0 && <path d={`M18 ${y}h36`} stroke="rgb(var(--c-molten))" strokeWidth="1" opacity="0.5" />}
+            <rect x="23" y={y + 4} width="7" height="6" fill="rgb(var(--c-molten))" opacity="0.22" />
+            <rect x="42" y={y + 4} width="7" height="6" fill="rgb(var(--c-molten))" opacity="0.22" />
           </g>
         );
       })}
       {/* footing: poured once, whatever the storey count */}
-      <path d="M22 58h28l-3 4H25z" fill="#5AAA46" opacity="0.5" />
-      <path d="M6 62h60" stroke="#2C313A" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M22 58h28l-3 4H25z" fill="rgb(var(--c-verdigris))" opacity="0.5" />
+      <path d="M6 62h60" stroke="rgb(var(--c-line))" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
