@@ -51,7 +51,7 @@ export default function PrintShareBar({ result, onRestart }) {
         <button
           type="button"
           onClick={onRestart}
-          className="ml-auto text-sm font-medium text-grey underline underline-offset-4 hover:text-primary"
+          className="ml-auto text-sm font-medium text-dim underline underline-offset-4 hover:text-molten"
         >
           Start over
         </button>

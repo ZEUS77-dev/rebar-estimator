@@ -4,14 +4,24 @@ A working prototype of the **Jindal Steel Oman Rebar Estimator**: a four-step wi
 ground floor area into an indicative rebar requirement and cost.
 
 It exists so the flow, the numbers and the brand skin can be reviewed before a production build.
-Skinned from jindalsteel.om — orange `#F5821E`, green `#5AAA46`, charcoal `#414042`, Roboto.
+
+**Look and feel — "Foundry".** Two grounds from one set of CSS variables: *day* is warm drafting
+vellum, *night* is cold rolled steel. Day is the default and `prefers-color-scheme` is deliberately
+not consulted, so a first visit always lands on the daylight palette; a deliberate choice is
+remembered in `localStorage`. The brand's own orange (`#F5821E`) and green (`#5AAA46`) carry over
+intact — the orange reads as molten metal, the green as a go/measure signal — and on the light
+ground the orange deepens to `#BA440A` so it survives as text.
+
+Type is Archivo at width axis 125% for display and Martian Mono for every numeral and label. No
+letter-spacing anywhere: Martian Mono is already a wide face, and spacing it further is the tell of
+a machine-made layout.
 
 ## Run it
 
 ```
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 53 tests: 39 engine, 14 render
+npm test         # 89 tests: 39 engine, 50 render
 npm run build    # production bundle into dist/
 ```
 
@@ -40,9 +50,14 @@ Both are already worked around in the repo; they only matter if you re-clone or 
 |---|---|
 | 1 | Ground floor area — a recommended range is shown, any positive value is accepted and rounded to whole sq. ft; Sq. Ft / Sq. Mts toggle |
 | 2 | Ground / G+1 / G+2 |
-| 3 | Floor plan gallery with BHK filter chips |
+| 3 | Floor plan slide-sorter — filmstrip left, drawing centre, spec sheet right. Clicking a thumbnail selects it |
 | 4 | Full House, or a single element — slab, beam, column, footing — plus an optional rebar grade |
 | → | Result: diameter-wise quantity, editable cost, element split, assumptions, print and share |
+
+The step rail is navigation, not just a progress gauge: any completed step is a jump target, and
+forward jumps unlock once the area is valid. It shows on the results screen too, so you can go back
+and change one answer. The wizard footer is `position: sticky`, which is why `.card` must **not**
+carry `overflow-hidden` — that turns it into a scroll container and sticky silently stops working.
 
 ## How the estimate is built
 
@@ -105,8 +120,13 @@ src/lib/validation.js       area rounding, error and warning codes
 src/lib/units.js            sq.ft ⇄ sq.m, kg ⇄ t, currency formatting
 src/lib/share.js            text summary, clipboard, download, print
 src/hooks/useEstimator.js   wizard state plus the memoised engine call
+src/hooks/useTheme.js       day/night, day-default, persisted
+src/hooks/useScrolled.js    drives the collapsing sticky header
+src/data/steelOfOman.js     the campaign carousel deck + Fisher-Yates shuffle
+src/components/brand/       "The Steel of Oman" carousel
+src/components/ui/BrandMark.jsx  inlined logo; wordmark rides currentColor
 src/components/             wizard steps, result cards, shared UI, plan SVGs
-src/components/render.test.jsx  14 server-render smoke tests
+src/components/render.test.jsx  50 server-render smoke tests
 ```
 
 `src/lib/estimator.js` imports only from `src/data/*` and `src/lib/units.js` — no React anywhere
@@ -128,3 +148,14 @@ for OMR, or any other market, by editing that block alone.
 Every result screen, print output and shared summary carries the disclaimer, and it cannot be
 stripped from an export. The numbers are indicative thumb rules for low-rise residential RCC, not a
 substitute for a licensed structural engineer.
+
+## Brand assets
+
+`public/brand/steel-of-oman/` holds the twelve "Steel of Oman" campaign slides from
+jindalsteel.om. The originals are 2000x2000 print files totalling 26.5 MB; they are resampled here
+to 1200px at q80 — 4.2 MB for the set, roughly 350 KB each — with the first slide `eager` and the
+rest `lazy`, so a page load fetches one image rather than twelve.
+
+The logo is inlined as `BrandMark.jsx` rather than referenced as a file. The brand only ships a
+**white** logo, which disappears on the daylight ground; inlining lets the wordmark ride on
+`currentColor` while the orange and green swooshes keep their exact brand hues.

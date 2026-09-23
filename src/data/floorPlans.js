@@ -162,5 +162,12 @@ export const FLOOR_PLANS = [
 
 export const PLANS_BY_ID = Object.fromEntries(FLOOR_PLANS.map((p) => [p.id, p]));
 
-/** Chip order follows the mockup: 3BHK, 4BHK, 2BHK. */
-export const BHK_FILTERS = [3, 4, 2];
+/** Ascending, so the chips and the filmstrip tell the same story: 2 -> 3 -> 4.
+ *  (The original mockup listed them 3, 4, 2, which read as arbitrary.) */
+export const BHK_FILTERS = [2, 3, 4];
+
+/** Display order for the gallery: smallest homes first, then by area. The source
+ *  array keeps its authoring order so ids stay stable. */
+export const PLANS_IN_ORDER = [...FLOOR_PLANS].sort(
+  (a, b) => a.bhk - b.bhk || a.areaSqFt - b.areaSqFt,
+);
