@@ -78,9 +78,11 @@ export default function CostCard({ result, state, dispatch, assumptions = DEFAUL
         </div>
       </dl>
 
-      <div className="mt-4 rounded-xl bg-molten px-5 py-4 text-ink">
-        <div className="text-xs text-base/70">Estimated rebar cost</div>
-        <div className="mt-1 text-2xl font-bold">
+      {/* Solid molten fill, so the type takes the page ground: light on day's
+          deep orange, dark on night's bright one. */}
+      <div className="mt-4 rounded bg-molten px-5 py-4 text-base">
+        <div className="label-key !text-base/75">Estimated rebar cost</div>
+        <div className="mt-1 font-mono text-2xl font-bold tabular-nums">
           {costKnown ? formatCurrency(result.totals.cost, { currency, locale }) : '—'}
         </div>
       </div>

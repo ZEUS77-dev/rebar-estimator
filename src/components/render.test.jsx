@@ -16,6 +16,7 @@ import StepFloors from './wizard/StepFloors.jsx';
 import StepPlan from './wizard/StepPlan.jsx';
 import StepScope from './wizard/StepScope.jsx';
 import ResultView from './result/ResultView.jsx';
+import CostCard from './result/CostCard.jsx';
 import FloorPlanSvg from './plans/FloorPlanSvg.jsx';
 import { Stepper, ThemeToggle, BrandHeader, WizardNav } from './ui/Primitives.jsx';
 import SteelOfOman from './brand/SteelOfOman.jsx';
@@ -508,5 +509,44 @@ describe('drawings follow the theme', () => {
     const html = renderToString(<StepFloors state={state} dispatch={noop} />);
     expect(html).toContain('var(--c-');
     expect(html).not.toMatch(/(?:fill|stroke)="#[0-9A-Fa-f]{3,8}"/);
+  });
+});
+
+describe('contrast on molten surfaces', () => {
+  const resultHtml = () =>
+    renderToString(
+      <ResultView
+        result={result}
+        state={{ ...state, step: 5 }}
+        dispatch={noop}
+        onBack={noop}
+        onRestart={noop}
+        assumptions={DEFAULT_ASSUMPTIONS}
+      />,
+    );
+
+  it('puts page-ground type on the solid molten cost block', () => {
+    const html = renderToString(
+      <CostCard result={result} state={state} dispatch={noop} assumptions={DEFAULT_ASSUMPTIONS} />,
+    );
+    const block = html.match(/<div class="[^"]*bg-molten [^"]*"[^>]*>/);
+    expect(block).not.toBeNull();
+    expect(block[0]).toContain('text-base');
+    // text-ink here is near-black on daylight's deep orange.
+    expect(block[0]).not.toContain('text-ink');
+  });
+
+  it('never puts ink on a solid molten fill anywhere', () => {
+    const html = resultHtml();
+    for (const tag of html.match(/<[a-z]+ class="[^"]*"/g) || []) {
+      if (/bg-molten/.test(tag)) expect(tag, tag).not.toMatch(/text-ink/);
+    }
+  });
+
+  it('uses the readable accent, not the bright one, on the tinted headline', () => {
+    const html = resultHtml();
+    // molten-hot is #F5821E in daylight too - barely 3:1 on the pale tint.
+    expect(html).toContain('text-molten');
+    expect(html).not.toContain('text-molten-hot');
   });
 });

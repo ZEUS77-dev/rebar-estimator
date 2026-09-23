@@ -28,7 +28,7 @@ function Stat({ label, value, sub, emphasis, i = 0 }) {
       <div
         className={[
           'relative mt-2 font-mono tabular-nums',
-          emphasis ? 'text-3xl font-bold text-molten-hot' : 'text-2xl font-medium text-ink',
+          emphasis ? 'text-3xl font-bold text-molten' : 'text-2xl font-medium text-ink',
         ].join(' ')}
       >
         {value}
