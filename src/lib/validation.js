@@ -1,11 +1,12 @@
 /** Input validation for the wizard and the engine.
  *  Errors block; warnings are advisory and never stop a calculation.
  *
- *  There is deliberately no fixed area range. Any positive area is accepted and
- *  rounded; an unusual one earns a warning on the result screen, not a block. */
+ *  There is deliberately no fixed area range. Step 1 shows a recommended band as
+ *  guidance, but any positive area is accepted and rounded; one outside the band
+ *  earns a note on entry and a warning on the result screen, never a block. */
 
 import { DEFAULT_ASSUMPTIONS } from '../data/assumptions.js';
-import { normalizeArea, formatNumber } from './units.js';
+import { normalizeArea, sqftToSqm, formatNumber } from './units.js';
 
 export const ERROR_CODES = {
   REQUIRED: 'REQUIRED',
@@ -31,8 +32,31 @@ export function roundAreaSqFt(sqft, assumptions = DEFAULT_ASSUMPTIONS) {
   return Math.round(sqft / step) * step;
 }
 
-export function areaRangeHint() {
-  return 'Enter the built footprint of the ground floor.';
+/** The recommended band expressed in whichever unit the field is showing. */
+export function recommendedAreaFor(unit, assumptions = DEFAULT_ASSUMPTIONS) {
+  const { min, max } = assumptions.recommendedAreaSqFt;
+  return unit === 'sqm' ? { min: sqftToSqm(min), max: sqftToSqm(max) } : { min, max };
+}
+
+/** Guidance for step 1. Deliberately worded as a recommendation, not a limit -
+ *  anything positive is accepted. */
+export function areaRangeHint(unit = 'sqft', assumptions = DEFAULT_ASSUMPTIONS) {
+  const { min, max } = recommendedAreaFor(unit, assumptions);
+  const suffix = unit === 'sqm' ? 'sq. mts.' : 'sq. ft.';
+  return `Recommended ${formatNumber(min, 0)} – ${formatNumber(
+    max,
+    0,
+  )} ${suffix} for a home. Other sizes are accepted.`;
+}
+
+/** Non-blocking: true when the entered area sits outside the recommended band,
+ *  so step 1 can show a gentle note beside the field. */
+export function isOutsideRecommended(raw, unit = 'sqft', assumptions = DEFAULT_ASSUMPTIONS) {
+  const n = Number(raw);
+  if (raw === '' || !Number.isFinite(n) || n <= 0) return false;
+  const sqft = normalizeArea(n, unit);
+  const { min, max } = assumptions.recommendedAreaSqFt;
+  return sqft < min || sqft > max;
 }
 
 /** Validate the area field alone - used live by step 1 to gate Next. */
@@ -88,17 +112,17 @@ export function validateInput(
     });
   }
 
-  const { min, max } = assumptions.typicalAreaSqFt;
+  const { min, max } = assumptions.recommendedAreaSqFt;
   if (rounded < min || rounded > max) {
     warnings.push({
       code: WARNING_CODES.ATYPICAL_AREA,
       message: `${formatNumber(
         rounded,
         0,
-      )} sq. ft. is outside the usual ${formatNumber(min, 0)}–${formatNumber(
+      )} sq. ft. is outside the recommended ${formatNumber(min, 0)}–${formatNumber(
         max,
         0,
-      )} sq. ft. residential floor plate. The thumb rules behind this estimate are calibrated for low-rise housing, so treat the result with extra caution.`,
+      )} sq. ft. for a home. The thumb rules behind this estimate are calibrated for low-rise housing, so treat the result with extra caution.`,
     });
   }
 

@@ -48,7 +48,7 @@ describe('screens render', () => {
     const html = renderToString(<App />);
     expect(html).toContain('Rebar Estimator');
     expect(html).toContain('Ground floor area');
-    expect(html).toContain('Enter the built footprint');
+    expect(html).toContain('Recommended 500 – 3,000 sq. ft.');
   });
 
   it('renders step 1', () => {
@@ -56,6 +56,33 @@ describe('screens render', () => {
       <StepArea state={state} dispatch={noop} onNext={noop} assumptions={DEFAULT_ASSUMPTIONS} />,
     );
     expect(html).toContain('Negotiate confidently');
+    expect(html).toContain('Recommended 500 – 3,000 sq. ft.');
+  });
+
+  it('converts the recommended range when the unit is square metres', () => {
+    const html = renderToString(
+      <StepArea
+        state={{ ...state, unit: 'sqm', area: '126' }}
+        dispatch={noop}
+        onNext={noop}
+        assumptions={DEFAULT_ASSUMPTIONS}
+      />,
+    );
+    expect(html).toContain('Recommended 46 – 279 sq. mts.');
+  });
+
+  it('nudges but does not error when the area is outside the recommended band', () => {
+    const html = renderToString(
+      <StepArea
+        state={{ ...state, area: '40000' }}
+        dispatch={noop}
+        onNext={noop}
+        assumptions={DEFAULT_ASSUMPTIONS}
+      />,
+    );
+    expect(html).toContain('outside the recommended range');
+    expect(html).toContain('You can still continue');
+    expect(html).not.toContain('role="alert"');
   });
 
   it('renders step 2 with all three floor options', () => {

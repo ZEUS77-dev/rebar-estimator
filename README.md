@@ -11,7 +11,7 @@ Skinned from jindalsteel.om — orange `#F5821E`, green `#5AAA46`, charcoal `#41
 ```
 npm install
 npm run dev      # http://localhost:5173
-npm test         # 50 tests: 38 engine, 12 render
+npm test         # 53 tests: 39 engine, 14 render
 npm run build    # production bundle into dist/
 ```
 
@@ -38,7 +38,7 @@ Both are already worked around in the repo; they only matter if you re-clone or 
 
 | Step | Screen |
 |---|---|
-| 1 | Ground floor area — any positive value, rounded to whole sq. ft, with a Sq. Ft / Sq. Mts toggle |
+| 1 | Ground floor area — a recommended range is shown, any positive value is accepted and rounded to whole sq. ft; Sq. Ft / Sq. Mts toggle |
 | 2 | Ground / G+1 / G+2 |
 | 3 | Floor plan gallery with BHK filter chips |
 | 4 | Full House, or a single element — slab, beam, column, footing — plus an optional rebar grade |
@@ -65,9 +65,11 @@ Scaling with floors is deliberately not uniform:
   for G / G+1 / G+2;
 - each level's columns are sized for **what sits above them** — `1 + 0.15 × storeysAbove`.
 
-There is **no fixed area range** — any positive area is accepted. The entered footprint is rounded
-to the nearest whole sq. ft (`areaRoundingSqFt`), and an area outside the usual residential band
-earns a warning on the result screen rather than a block.
+There is **no fixed area range**. Step 1 shows `recommendedAreaSqFt` (500 – 3,000 sq. ft., converted
+when the Sq. Mts toggle is on) as guidance, and any positive area is accepted regardless. The entered
+footprint is rounded to the nearest whole sq. ft (`areaRoundingSqFt`). An area outside the
+recommended band gets a nudge under the field on entry and a warning on the result screen — never a
+block.
 
 Wastage 3% and lap 5% give a combined ×1.0815. The selected floor plan contributes a layout
 complexity factor (2BHK 1.00, 3BHK 1.04, 4BHK 1.08) applied to beams, columns and misc only — the
@@ -98,13 +100,13 @@ src/data/assumptions.js     every number a reviewer might argue with, in one obj
 src/data/barConstants.js    diameters, 12 m length, d²/162
 src/data/floorPlans.js      the 8 gallery plans and their room rectangles
 src/lib/estimator.js        the engine — estimate() and recost()
-src/lib/estimator.test.js   38 engine tests
+src/lib/estimator.test.js   39 engine tests
 src/lib/validation.js       area rounding, error and warning codes
 src/lib/units.js            sq.ft ⇄ sq.m, kg ⇄ t, currency formatting
 src/lib/share.js            text summary, clipboard, download, print
 src/hooks/useEstimator.js   wizard state plus the memoised engine call
 src/components/             wizard steps, result cards, shared UI, plan SVGs
-src/components/render.test.jsx  12 server-render smoke tests
+src/components/render.test.jsx  14 server-render smoke tests
 ```
 
 `src/lib/estimator.js` imports only from `src/data/*` and `src/lib/units.js` — no React anywhere

@@ -16,10 +16,10 @@ export const DISCLAIMER =
 export const DEFAULT_ASSUMPTIONS = {
   version: ENGINE_VERSION,
 
-  /** No fixed range: any positive area is accepted. These are advisory only —
-   *  outside this band the result screen notes the area is unusual for a
-   *  residential floor plate, but nothing is blocked. */
-  typicalAreaSqFt: { min: 400, max: 5000 },
+  /** Recommended, NOT enforced. Shown on step 1 as guidance and used as the
+   *  threshold for an advisory warning; any positive area is still accepted.
+   *  Brackets a typical villa ground-floor plate. */
+  recommendedAreaSqFt: { min: 500, max: 3000 },
 
   /** The entered footprint is rounded to the nearest whole sq.ft before use.
    *  A hand-measured plot does not carry three decimal places of meaning. */

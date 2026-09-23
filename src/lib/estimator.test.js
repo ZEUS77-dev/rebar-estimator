@@ -160,10 +160,20 @@ describe('units and validation', () => {
     expect(r.warnings.map((w) => w.code)).not.toContain('AREA_ROUNDED');
   });
 
-  it('warns about an unusual floor plate without blocking it', () => {
-    const r = estimate({ ...base, areaSqFt: 40000 });
-    expect(r.ok).toBe(true);
-    expect(r.warnings.map((w) => w.code)).toContain('ATYPICAL_AREA');
+  it('warns outside the recommended band without blocking it', () => {
+    for (const a of [120, 40000]) {
+      const r = estimate({ ...base, areaSqFt: a });
+      expect(r.ok, `${a} sq.ft`).toBe(true);
+      expect(r.warnings.map((w) => w.code), `${a} sq.ft`).toContain('ATYPICAL_AREA');
+    }
+  });
+
+  it('does not warn inside the recommended band', () => {
+    const { min, max } = DEFAULT_ASSUMPTIONS.recommendedAreaSqFt;
+    for (const a of [min, 1356, max]) {
+      const r = estimate({ ...base, areaSqFt: a });
+      expect(r.warnings.map((w) => w.code), `${a} sq.ft`).not.toContain('ATYPICAL_AREA');
+    }
   });
 
   it('rejects blank and non-numeric area', () => {

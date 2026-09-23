@@ -1,5 +1,5 @@
 import { NumberField, UnitToggle, ArrowRight } from '../ui/Primitives.jsx';
-import { areaRangeHint, validateArea } from '../../lib/validation.js';
+import { areaRangeHint, isOutsideRecommended, validateArea } from '../../lib/validation.js';
 import { DEFAULT_ASSUMPTIONS } from '../../data/assumptions.js';
 
 const VALUE_PROPS = [
@@ -67,6 +67,8 @@ function SiteIllustration() {
 export default function StepArea({ state, dispatch, onNext, assumptions = DEFAULT_ASSUMPTIONS }) {
   const error = validateArea(state.area, state.unit, assumptions);
   const touched = state.area !== '';
+  // Advisory only — an area outside the recommended band still calculates.
+  const outsideRecommended = !error && isOutsideRecommended(state.area, state.unit, assumptions);
 
   return (
     <div className="px-4 py-8 sm:px-8">
@@ -82,7 +84,7 @@ export default function StepArea({ state, dispatch, onNext, assumptions = DEFAUL
           </p>
 
           <h2 className="mt-7 text-lg font-semibold text-charcoal">Ground floor area</h2>
-          <p className="mt-1 text-xs text-grey">{areaRangeHint()}</p>
+          <p className="mt-1 text-xs text-grey">{areaRangeHint(state.unit, assumptions)}</p>
 
           <div className="mt-3 flex flex-wrap items-start gap-3">
             <div className="min-w-[180px] flex-1">
@@ -108,6 +110,28 @@ export default function StepArea({ state, dispatch, onNext, assumptions = DEFAUL
           {touched && error && (
             <p role="alert" className="mt-2 text-xs font-medium text-primary">
               {error.message}
+            </p>
+          )}
+
+          {/* Outside the recommended band is a nudge, not an error — styled in the
+              neutral charcoal rather than the brand orange used for real errors. */}
+          {outsideRecommended && (
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-grey">
+              <svg
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                className="mt-px h-3.5 w-3.5 shrink-0"
+                aria-hidden="true"
+              >
+                <circle cx="8" cy="8" r="6.5" />
+                <path d="M8 5v3.5M8 11h.01" strokeLinecap="round" />
+              </svg>
+              <span>
+                That is outside the recommended range. You can still continue — the estimate is
+                calibrated for low-rise homes, so treat the result with extra caution.
+              </span>
             </p>
           )}
 
