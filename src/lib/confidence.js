@@ -33,6 +33,17 @@ const SIGMA_ATYPICAL_AREA = 0.06;
 const SIGMA_PLAN_NOT_SELECTED = 0.03;
 const SIGMA_PLAN_AREA_MISMATCH = 0.04;
 
+/** Geometry-mode-only drivers. A traced building replaces the layout-factor
+ *  guess with a measurement, which is why its BASE_SIGMA case can end up
+ *  tighter than an untraced one - these are the ways a trace can still be a
+ *  weak measurement rather than a strong one. */
+const SIGMA_INFERRED_GRID = 0.05;
+const SIGMA_SPAN_OUTSIDE_RANGE = 0.05;
+const SIGMA_LOW_ORTHOGONALITY = 0.04;
+const SIGMA_SHORT_SCALE_LINE = 0.05;
+const ORTHOGONALITY_THRESHOLD = 0.7;
+const SCALE_LINE_FRACTION_THRESHOLD = 0.15;
+
 const LEVEL_THRESHOLDS = { high: 0.15, moderate: 0.3 };
 
 function levelFor(sigma) {
@@ -47,8 +58,15 @@ function levelFor(sigma) {
  * @param {Array<{code:string}>} input.warnings   the warnings estimate() already produced
  * @param {object} input.assumptions
  * @param {'area'|'geometry'} [input.basis]        what the point figure was built from
+ * @param {object|null} [input.buildingGeometry]   the compiled geometry, when basis is 'geometry'
  */
-export function computeConfidence({ levels, warnings, assumptions, basis = 'area' }) {
+export function computeConfidence({
+  levels,
+  warnings,
+  assumptions,
+  basis = 'area',
+  buildingGeometry = null,
+}) {
   const drivers = [
     {
       code: 'BASE_METHOD',
@@ -104,6 +122,47 @@ export function computeConfidence({ levels, warnings, assumptions, basis = 'area
       hint: 'Pick a plan closer to the area you entered, or trace your own, for a tighter estimate.',
       actionable: true,
     });
+  }
+
+  if (basis === 'geometry' && buildingGeometry) {
+    if (buildingGeometry.columnsInferred) {
+      drivers.push({
+        code: 'INFERRED_GRID',
+        sigma: SIGMA_INFERRED_GRID,
+        label: 'Column grid inferred, not placed',
+        hint: 'Place your columns instead of relying on the inferred grid for a tighter estimate.',
+        actionable: true,
+      });
+    }
+    const { maxSpanM } = buildingGeometry.derived;
+    const { min, max } = assumptions.calibratedSpanRangeM;
+    if (maxSpanM < min || maxSpanM > max) {
+      drivers.push({
+        code: 'SPAN_OUTSIDE_CALIBRATED_RANGE',
+        sigma: SIGMA_SPAN_OUTSIDE_RANGE,
+        label: `Longest span (${maxSpanM.toFixed(1)} m) outside the ${min}-${max} m calibrated range`,
+        hint: 'The geometry-mode rates were calibrated against a typical residential bay. An unusually short or long span behaves less predictably under them.',
+      });
+    }
+    if (buildingGeometry.quality.orthogonalityScore < ORTHOGONALITY_THRESHOLD) {
+      drivers.push({
+        code: 'LOW_ORTHOGONALITY',
+        sigma: SIGMA_LOW_ORTHOGONALITY,
+        label: 'Traced outline is not very axis-aligned',
+        hint: 'Real floor plans are overwhelmingly rectilinear - check the trace for stray or imprecise points.',
+        actionable: true,
+      });
+    }
+    const scaleFraction = buildingGeometry.quality.scaleLinePxFraction;
+    if (scaleFraction != null && scaleFraction < SCALE_LINE_FRACTION_THRESHOLD) {
+      drivers.push({
+        code: 'SHORT_SCALE_LINE',
+        sigma: SIGMA_SHORT_SCALE_LINE,
+        label: 'Reference line was short relative to the image',
+        hint: 'Redraw the reference line across a longer known dimension - area error grows with the square of scale error.',
+        actionable: true,
+      });
+    }
   }
 
   const sigma = Math.sqrt(drivers.reduce((sum, d) => sum + d.sigma * d.sigma, 0));

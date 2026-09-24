@@ -8,7 +8,7 @@ import { useMemo, useReducer } from 'react';
 import { estimate, recost } from '../lib/estimator.js';
 import { DEFAULT_ASSUMPTIONS, DEFAULT_BUILDING_TYPE, withBuildingType } from '../data/assumptions.js';
 import { PLANS_BY_ID } from '../data/floorPlans.js';
-import { convertArea, round } from '../lib/units.js';
+import { convertArea, round, sqmToSqft } from '../lib/units.js';
 import { clampRate } from '../lib/validation.js';
 
 export const STEPS = [
@@ -31,6 +31,13 @@ const initialState = {
   rate: null, // null = use the per-grade default rates
   grade: null, // null = per-element defaults
   buildingType: DEFAULT_BUILDING_TYPE, // 'villa' | 'apartment' - widens the recommended area band only
+
+  // Which plan source step 3 is currently using. A trace is kept around even
+  // when planSource switches back to 'gallery' - re-tracing is the expensive
+  // part, not remembering a compiled result, so picking a gallery plan and
+  // then coming back to "my traced plan" is free.
+  planSource: 'gallery', // 'gallery' | 'traced'
+  trace: null, // { id, geometry } - geometry only, never the source image
 };
 
 function reducer(state, action) {
@@ -58,7 +65,17 @@ function reducer(state, action) {
     case 'setFloors':
       return { ...state, floors: action.value };
     case 'setPlan':
-      return { ...state, planId: action.value };
+      return { ...state, planId: action.value, planSource: 'gallery' };
+    case 'setTrace':
+      return { ...state, trace: action.value, planSource: 'traced' };
+    case 'clearTrace':
+      return {
+        ...state,
+        trace: null,
+        planSource: state.planSource === 'traced' ? 'gallery' : state.planSource,
+      };
+    case 'setPlanSource':
+      return { ...state, planSource: action.value };
     case 'setBhkFilter':
       return { ...state, bhkFilter: state.bhkFilter === action.value ? null : action.value };
     case 'setScope':
@@ -88,7 +105,26 @@ export function useEstimator(baseAssumptions = DEFAULT_ASSUMPTIONS) {
     [baseAssumptions, state.buildingType],
   );
 
-  const plan = state.planId ? PLANS_BY_ID[state.planId] : null;
+  // A traced plan synthesises the same plan-shaped object the gallery already
+  // produces - areaSqFt from the compiled geometry, planFactor pinned to 1
+  // since a traced layout is measured, not estimated from a BHK count. Every
+  // existing consumer (validateInput, elementKg, the result screen) keeps
+  // reading the same fields it always has; only estimate() itself also gets
+  // the geometry directly, via buildingGeometry below.
+  const trace = state.planSource === 'traced' ? state.trace : null;
+  const plan = trace
+    ? {
+        id: trace.id,
+        // result.input.planType feeds a "<type> plan" template on the result
+        // screen (e.g. "2BHK plan") - "Traced" alone reads right there too.
+        type: 'Traced',
+        planFactor: 1,
+        areaSqFt: sqmToSqft(trace.geometry.derived.areaSqM),
+      }
+    : state.planId
+      ? PLANS_BY_ID[state.planId]
+      : null;
+  const buildingGeometry = trace ? trace.geometry : null;
 
   // Only the four wizard answers feed this. Rate edits are handled below.
   const baseResult = useMemo(() => {
@@ -101,8 +137,19 @@ export function useEstimator(baseAssumptions = DEFAULT_ASSUMPTIONS) {
       scope: state.scope,
       assumptions,
       overrides: state.grade ? { grade: state.grade } : {},
+      buildingGeometry,
     });
-  }, [state.step, state.area, state.unit, state.floors, state.planId, state.scope, state.grade, assumptions, plan]);
+  }, [
+    state.step,
+    state.area,
+    state.unit,
+    state.floors,
+    state.scope,
+    state.grade,
+    assumptions,
+    plan,
+    buildingGeometry,
+  ]);
 
   const result = useMemo(() => {
     if (!baseResult || !baseResult.ok) return baseResult;

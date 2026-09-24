@@ -1,6 +1,10 @@
 /** Unit conversion and display formatting. No React, no engine logic. */
 
 export const SQFT_PER_SQM = 10.76391;
+export const M_PER_FT = 0.3048;
+
+export const ftToM = (v) => v * M_PER_FT;
+export const mToFt = (v) => v / M_PER_FT;
 
 /** Tolerance for range comparisons, so exactly 578.00 and 1934.00 pass. */
 export const EPS = 1e-6;
