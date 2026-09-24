@@ -99,6 +99,48 @@ export const DEFAULT_ASSUMPTIONS = {
    *  switches on. */
   calibratedMaxLevels: 3,
 
+  /** Column grid span the area-rate model was implicitly calibrated against -
+   *  a traced building whose panels run longer than this is asking the same
+   *  per-sq.ft rate to cover more slab/beam steel than it was ever validated
+   *  for. See BENCHMARKS in the Phase 2 plan: 3.6-4.5 m is the economical
+   *  residential bay before post-tensioning or a beam grid starts to matter. */
+  calibratedSpanRangeM: { min: 3.0, max: 4.5 },
+
+  /** Nominal engineering rates for geometry mode (column/beam/slab only -
+   *  footing and misc stay on elementRatesKgPerSqFt even when a building has
+   *  been traced, see estimator.js). These are the PHYSICAL rates before
+   *  calibration against the anchor case; geometryCalibration below is the
+   *  multiplier that brings each one to parity with the area-rate model on a
+   *  plain rectangle, chosen once during that calibration pass rather than
+   *  hand-picked here. */
+  geometryRates: {
+    columnKgPerM: 10, // kg of cage steel per metre of column height, per column
+    beamKgPerM: 10, // kg per metre of beam run (edge + interior, see grid.js)
+    slabKgPerSqMBase: 8, // kg/sq.m at the reference span below
+    slabSpanRefM: 3.6,
+    slabSpanExponent: 1.3, // longer spans need disproportionately more steel
+  },
+
+  /** Multiplies each geometry-mode element's nominal rate above to bring it to
+   *  parity with the area-rate model on the calibration anchor (the existing
+   *  1356 sq.ft / G+1 villa, as a plain 12.6 m x 10 m rectangle with a 3.6 m
+   *  inferred grid - see geometry/compile.js's calibration test).
+   *
+   *  All three ratios came out 1.4-1.8x - geometry mode under-shooting area
+   *  mode - which was checked against the ~30% sanity bound the plan calls
+   *  for before tuning anything: a bug would look like an order-of-magnitude
+   *  miss or a backwards relationship, not a same-direction 1.4-1.8x gap
+   *  across all three elements. The explanation holds up: an inferred 3.6 m
+   *  grid places a column at every intersection (20 for this anchor), which
+   *  is a proper apartment-density frame, denser than the sparser column
+   *  count (or load-bearing wall construction) a small villa's flat rate was
+   *  ever built against. That is a genuine villa-vs-apartment framing
+   *  difference the model is honestly allowed to have, not a units slip or a
+   *  wrong exponent - so it is corrected here, per element, rather than by
+   *  inflating the nominal per-metre/per-sq.m rates above past what a real
+   *  bar count supports. */
+  geometryCalibration: { column: 1.808, beam: 1.418, slab: 1.76 },
+
   /** A more cut-up layout means more beams and columns per sq.ft. */
   planFactorByBhk: { 2: 1.0, 3: 1.04, 4: 1.08 },
   planFactorAppliesTo: ['beam', 'column', 'misc'],

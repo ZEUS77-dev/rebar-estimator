@@ -5,14 +5,20 @@
  *  wizard's own Next does that job. Which also means no local preview state:
  *  what the pane shows is simply what is selected. */
 
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { Chip, CheckIcon } from '../ui/Primitives.jsx';
 import FloorPlanSvg from '../plans/FloorPlanSvg.jsx';
 import { PLANS_IN_ORDER, BHK_FILTERS, PLANS_BY_ID } from '../../data/floorPlans.js';
 import { DEFAULT_ASSUMPTIONS } from '../../data/assumptions.js';
-import { formatNumber } from '../../lib/units.js';
+import { formatNumber, formatArea, sqmToSqft } from '../../lib/units.js';
+
+// Lazy-loaded: nothing in Plan Studio (the SVG viewport, the trace reducer)
+// should cost the homeowner path a single byte unless they actually open it.
+const PlanStudio = lazy(() => import('../studio/PlanStudio.jsx'));
 
 export default function StepPlan({ state, dispatch, assumptions = DEFAULT_ASSUMPTIONS }) {
+  const [studioOpen, setStudioOpen] = useState(false);
+  const traced = state.planSource === 'traced' ? state.trace : null;
   const plans = useMemo(
     () =>
       state.bhkFilter
@@ -64,6 +70,9 @@ export default function StepPlan({ state, dispatch, assumptions = DEFAULT_ASSUMP
               Clear
             </button>
           )}
+          <button type="button" onClick={() => setStudioOpen(true)} className="btn-ghost">
+            {state.trace ? 'Re-trace my plan' : 'Trace my own plan'}
+          </button>
         </div>
       </div>
 
@@ -73,6 +82,36 @@ export default function StepPlan({ state, dispatch, assumptions = DEFAULT_ASSUMP
           aria-label="Floor plans"
           className="flex gap-3 overflow-x-auto pb-2 lg:max-h-[clamp(18rem,52vh,30rem)] lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:pb-0 lg:pr-2"
         >
+          {state.trace && (
+            <li className="shrink-0">
+              <button
+                type="button"
+                onClick={() => dispatch({ type: 'setPlanSource', value: 'traced' })}
+                aria-current={traced ? 'true' : undefined}
+                className={[
+                  'flex w-36 items-start gap-2 rounded border p-1.5 text-left transition-colors lg:w-full',
+                  traced ? 'border-molten bg-molten/[0.07]' : 'border-line bg-panel hover:border-dim',
+                ].join(' ')}
+              >
+                <span className={['mt-1 w-5 shrink-0 text-center font-mono text-[10px]', traced ? 'text-molten' : 'text-dim'].join(' ')}>
+                  ✎
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-sm bg-base text-[9px] text-dim">
+                    Traced
+                  </span>
+                  <span className="mt-1.5 flex items-center justify-between gap-1">
+                    <span className="font-mono text-[10px] text-dim">Your plan</span>
+                    {traced && (
+                      <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-molten text-base">
+                        <CheckIcon className="h-2 w-2" />
+                      </span>
+                    )}
+                  </span>
+                </span>
+              </button>
+            </li>
+          )}
           {plans.map((p, i) => {
             const active = viewing && viewing.id === p.id;
             const picked = chosen && chosen.id === p.id;
@@ -120,7 +159,9 @@ export default function StepPlan({ state, dispatch, assumptions = DEFAULT_ASSUMP
         </ol>
 
         {/* ---- detail pane ---------------------------------------------- */}
-        {viewing ? (
+        {traced ? (
+          <TracedDetail trace={traced} onRetrace={() => setStudioOpen(true)} />
+        ) : viewing ? (
           <div className="min-w-0">
             {/* Drawing and specs sit side by side: the specs read as a spec
                 sheet beside the drawing rather than a strip underneath it, and
@@ -169,6 +210,18 @@ export default function StepPlan({ state, dispatch, assumptions = DEFAULT_ASSUMP
           </div>
         )}
       </div>
+
+      {studioOpen && (
+        <Suspense fallback={null}>
+          <PlanStudio
+            onClose={() => setStudioOpen(false)}
+            onUseTrace={(trace) => {
+              dispatch({ type: 'setTrace', value: trace });
+              setStudioOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
@@ -186,6 +239,43 @@ function Spec({ k, v, accent }) {
       >
         {v}
       </dd>
+    </div>
+  );
+}
+
+/** The traced-plan equivalent of the gallery's detail pane - a summary of
+ *  what was measured instead of a drawing, since there is no room-by-room
+ *  layout to draw for a traced outline. */
+function TracedDetail({ trace, onRetrace }) {
+  const d = trace.geometry.derived;
+  return (
+    <div className="min-w-0">
+      <div className="grid gap-4 sm:grid-cols-[1fr_11rem]">
+        <div className="flex h-[clamp(15rem,44vh,25rem)] flex-col items-center justify-center gap-3 rounded-lg border border-line bg-base p-3 text-center sm:p-4">
+          <p className="text-sm text-dim">Traced from your uploaded plan</p>
+          <button type="button" onClick={onRetrace} className="btn-ghost">
+            Re-trace
+          </button>
+        </div>
+        <div className="flex flex-col gap-3">
+          <p className="flex items-center gap-1.5 font-mono text-[11px] text-molten">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-molten text-base">
+              <CheckIcon className="h-2.5 w-2.5" />
+            </span>
+            Selected
+          </p>
+          <dl className="divide-y divide-line overflow-hidden rounded border border-line bg-panel">
+            <Spec k="Area" v={formatArea(sqmToSqft(d.areaSqM), 'sqft')} accent />
+            <Spec k="Type" v="Traced plan" />
+            <Spec k="Columns" v={`${d.columnCount} ${trace.geometry.columnsInferred ? '(inferred grid)' : '(placed)'}`} />
+            <Spec k="Layout factor" v="× 1.00 (measured)" />
+          </dl>
+          <p className="text-[11px] leading-relaxed text-dim">
+            Column, beam and slab steel are computed from this measured layout instead of a flat
+            rate. Press Next to continue.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -41,14 +41,41 @@ export function columnLevelFactors(levels, perStoreyAbove) {
   return Array.from({ length: levels }, (_, i) => 1 + perStoreyAbove * (levels - 1 - i));
 }
 
-/** Net kg for one element, before wastage and lap. */
-export function elementKg(element, { footprintSqFt: A, levels, planFactor, assumptions }) {
+/** Elements a traced BuildingGeometry can replace with a measured quantity.
+ *  Footing and misc stay on the area-rate model even in geometry mode - see
+ *  the Phase 2B plan: footing steel scales with tributary area, which is
+ *  total area / column count, so columnCount x f(tributary) collapses back to
+ *  being proportional to total area anyway. Modelling it separately would add
+ *  complexity for no benefit. */
+const GEOMETRY_ELEMENTS = new Set(['column', 'beam', 'slab']);
+
+/** kg/sq.m of slab steel at a given short span. Rises faster than linearly
+ *  with span, per assumptions.geometryRates - a 3 m and a 6 m span do not
+ *  carry the same steel. */
+function slabKgPerSqM(shortSpanM, geometryRates) {
+  const ratio = shortSpanM / geometryRates.slabSpanRefM;
+  return geometryRates.slabKgPerSqMBase * ratio ** geometryRates.slabSpanExponent;
+}
+
+/** Net kg for one element, before wastage and lap. `buildingGeometry`, when
+ *  present, is a compiled BuildingGeometry (see geometry/compile.js) - column,
+ *  beam and slab are then computed from the actual traced quantities instead
+ *  of the flat per-sq.ft rate. */
+export function elementKg(
+  element,
+  { footprintSqFt: A, levels, planFactor, assumptions, buildingGeometry = null },
+) {
   const r = assumptions.elementRatesKgPerSqFt;
-  const pf = assumptions.planFactorAppliesTo.includes(element) ? planFactor : 1;
+  const useGeometry = Boolean(buildingGeometry) && GEOMETRY_ELEMENTS.has(element);
+  // A measured layout (real column count, real beam run) already IS the thing
+  // planFactor exists to estimate - multiplying by it too would double-count
+  // complexity that was measured once already.
+  const pf = useGeometry ? 1 : assumptions.planFactorAppliesTo.includes(element) ? planFactor : 1;
 
   switch (element) {
     // Poured once. It only gets heavier as the load above grows, so this is
     // deliberately sub-linear in `levels` rather than multiplied by it.
+    // Always area-based - see GEOMETRY_ELEMENTS above.
     case 'footing':
       return r.footing * assumptions.footingStoreyFactor(levels) * A;
     case 'column': {
@@ -59,12 +86,46 @@ export function elementKg(element, { footprintSqFt: A, levels, planFactor, assum
       // Stands in for shear walls/a core above lateralThresholdLevels, which
       // this engine does not model - see assumptions.js. A no-op (factor 1)
       // for every storey count below the threshold, so G/G+1/G+2 are untouched.
+      // Applies in geometry mode too - it is about a missing structural
+      // system, independent of how the base column quantity was derived.
       const lateral = lateralSurchargeFactor(levels, assumptions);
+      if (useGeometry) {
+        const { columnKgPerM } = assumptions.geometryRates;
+        return (
+          buildingGeometry.derived.columnCount *
+          buildingGeometry.storey.heightM *
+          columnKgPerM *
+          sum *
+          lateral *
+          assumptions.geometryCalibration.column
+        );
+      }
       return r.column * A * sum * pf * lateral;
     }
     case 'beam':
+      if (useGeometry) {
+        const { beamKgPerM } = assumptions.geometryRates;
+        return (
+          buildingGeometry.derived.beamRunM *
+          beamKgPerM *
+          levels *
+          assumptions.geometryCalibration.beam
+        );
+      }
       return r.beam * A * levels * pf;
     case 'slab':
+      if (useGeometry) {
+        const { panels, avgSpanM, areaSqM } = buildingGeometry.derived;
+        const geometryRates = assumptions.geometryRates;
+        // A real building's panels should always sum to a usable area; this
+        // only guards a degenerate case (every cell under the sliver
+        // threshold) where the whole traced area would otherwise carry zero
+        // slab steel.
+        const panelKg = panels.length
+          ? panels.reduce((sum, p) => sum + p.areaSqM * slabKgPerSqM(p.shortSpanM, geometryRates), 0)
+          : areaSqM * slabKgPerSqM(avgSpanM, geometryRates);
+        return panelKg * levels * assumptions.geometryCalibration.slab;
+      }
       return r.slab * A * levels * pf;
     case 'misc':
       return r.misc * A * levels * pf;
@@ -115,6 +176,9 @@ function reconcile(byDia, target) {
  * @param {string} [input.scope]          a SCOPES id
  * @param {object} [input.assumptions]
  * @param {object} [input.overrides]      { ratePerTonne, grade, wastagePct, lapPct }
+ * @param {object|null} [input.buildingGeometry]  a compiled BuildingGeometry
+ *   (see geometry/compile.js) - when present, column/beam/slab are computed
+ *   from the traced quantities instead of the flat per-sq.ft rate.
  */
 export function estimate({
   areaSqFt,
@@ -124,6 +188,7 @@ export function estimate({
   scope = 'full',
   assumptions = DEFAULT_ASSUMPTIONS,
   overrides = {},
+  buildingGeometry = null,
 } = {}) {
   const { errors, warnings } = validateInput({ areaSqFt, areaUnit, floors, plan }, assumptions);
   if (errors.length) return { ok: false, errors, warnings };
@@ -165,7 +230,7 @@ export function estimate({
 
   // --- per element -------------------------------------------------------
   const byElement = scopeDef.elements.map((el) => {
-    const netKg = elementKg(el, { footprintSqFt: A, levels, planFactor, assumptions });
+    const netKg = elementKg(el, { footprintSqFt: A, levels, planFactor, assumptions, buildingGeometry });
     const grossKg = netKg * multiplier;
     const grade = gradeFor(el);
     const ratePerTonne = rates[grade];
@@ -240,7 +305,13 @@ export function estimate({
   // The rate is treated as exact when banding cost - it's user-editable, and
   // stacking rate uncertainty on top of the structural uncertainty would
   // conflate two different kinds of "unknown".
-  const confidence = computeConfidence({ levels, warnings, assumptions, basis: 'area' });
+  const confidence = computeConfidence({
+    levels,
+    warnings,
+    assumptions,
+    basis: buildingGeometry ? 'geometry' : 'area',
+    buildingGeometry,
+  });
   const tonnesBand = bandFrom(tonnes, confidence.sigma);
   const costBand = bandFrom(cost, confidence.sigma);
 
@@ -258,7 +329,7 @@ export function estimate({
       scope,
       assumptionsVersion: assumptions.version,
     },
-    geometry: { footprintSqFt: A, builtUpSqFt, levels, planFactor },
+    geometry: { footprintSqFt: A, builtUpSqFt, levels, planFactor, buildingGeometry },
     totals: {
       netKg,
       grossKg,
