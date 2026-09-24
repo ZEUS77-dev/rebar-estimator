@@ -42,7 +42,18 @@ export default function PlanStudio({ onClose, onUseTrace }) {
 
   const finish = () => {
     if (!geometry) return;
-    onUseTrace({ id: newTraceId(), geometry });
+    // A lightweight snapshot of the drawing itself - just enough to redraw
+    // the outline/grid/columns over the photo elsewhere (step 3's detail
+    // pane), without carrying the whole editable TraceDoc out of the Studio.
+    const preview = {
+      imageUrl: doc.image.url,
+      imageW: doc.image.w,
+      imageH: doc.image.h,
+      outline: doc.outline.points,
+      columns: doc.columns,
+      scale: doc.scale,
+    };
+    onUseTrace({ id: newTraceId(), geometry, preview });
   };
 
   return (

@@ -137,17 +137,17 @@ export function usePlanTrace() {
   // Revoke the previous object URL whenever the image changes, and on
   // unmount - otherwise every re-upload during a Studio session leaks one.
   const urlRef = useRef(null);
+  // Deliberately no revoke-on-unmount: finishing a trace hands this exact URL
+  // out to the wizard (see PlanStudio's `finish()`) as the "done" preview's
+  // image, and the Studio unmounts immediately after - revoking here would
+  // invalidate a URL the caller just asked to keep. The wizard (useEstimator)
+  // owns that URL's lifetime from that point on; this effect only ever
+  // cleans up an image THIS hook is discarding in favour of a newer one.
   useEffect(() => {
     const url = state.doc.image?.url ?? null;
     if (urlRef.current && urlRef.current !== url) URL.revokeObjectURL(urlRef.current);
     urlRef.current = url;
   }, [state.doc.image]);
-  useEffect(
-    () => () => {
-      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-    },
-    [],
-  );
 
   const loadImageFile = useCallback((file) => {
     const url = URL.createObjectURL(file);

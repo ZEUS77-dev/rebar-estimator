@@ -15,6 +15,7 @@ import { formatNumber, formatArea, sqmToSqft } from '../../lib/units.js';
 // Lazy-loaded: nothing in Plan Studio (the SVG viewport, the trace reducer)
 // should cost the homeowner path a single byte unless they actually open it.
 const PlanStudio = lazy(() => import('../studio/PlanStudio.jsx'));
+const TracePreview = lazy(() => import('../studio/TracePreview.jsx'));
 
 export default function StepPlan({ state, dispatch, assumptions = DEFAULT_ASSUMPTIONS }) {
   const [studioOpen, setStudioOpen] = useState(false);
@@ -251,9 +252,27 @@ function TracedDetail({ trace, onRetrace }) {
   return (
     <div className="min-w-0">
       <div className="grid gap-4 sm:grid-cols-[1fr_11rem]">
-        <div className="flex h-[clamp(15rem,44vh,25rem)] flex-col items-center justify-center gap-3 rounded-lg border border-line bg-base p-3 text-center sm:p-4">
-          <p className="text-sm text-dim">Traced from your uploaded plan</p>
-          <button type="button" onClick={onRetrace} className="btn-ghost">
+        <div className="relative h-[clamp(15rem,44vh,25rem)] overflow-hidden rounded-lg border border-line bg-base p-3 sm:p-4">
+          {trace.preview ? (
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center text-sm text-dim">
+                  Loading your drawing…
+                </div>
+              }
+            >
+              <TracePreview preview={trace.preview} geometry={trace.geometry} className="h-full w-full" />
+            </Suspense>
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+              <p className="text-sm text-dim">Traced from your uploaded plan</p>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={onRetrace}
+            className="btn-ghost absolute right-3 top-3 !bg-panel/85 !px-3 !py-1.5 !text-[10px] backdrop-blur-sm"
+          >
             Re-trace
           </button>
         </div>

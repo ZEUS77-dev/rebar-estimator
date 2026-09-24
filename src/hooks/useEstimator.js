@@ -4,7 +4,7 @@
  *  wizard reaches the result step. Rate edits go through recost() so a
  *  keystroke never re-runs the full estimate. */
 
-import { useMemo, useReducer } from 'react';
+import { useEffect, useMemo, useReducer, useRef } from 'react';
 import { estimate, recost } from '../lib/estimator.js';
 import { DEFAULT_ASSUMPTIONS, DEFAULT_BUILDING_TYPE, withBuildingType } from '../data/assumptions.js';
 import { PLANS_BY_ID } from '../data/floorPlans.js';
@@ -104,6 +104,20 @@ export function useEstimator(baseAssumptions = DEFAULT_ASSUMPTIONS) {
     () => withBuildingType(baseAssumptions, state.buildingType),
     [baseAssumptions, state.buildingType],
   );
+
+  // Plan Studio hands its object URL out to us at the moment a trace is
+  // finished (see usePlanTrace's own comment on why it doesn't revoke it
+  // itself). This wizard's `trace` state is that URL's owner from here on:
+  // revoke the previous one whenever it's replaced or cleared, so re-tracing
+  // or starting over doesn't leak a blob per attempt.
+  const prevPreviewUrlRef = useRef(null);
+  useEffect(() => {
+    const url = state.trace?.preview?.imageUrl ?? null;
+    if (prevPreviewUrlRef.current && prevPreviewUrlRef.current !== url) {
+      URL.revokeObjectURL(prevPreviewUrlRef.current);
+    }
+    prevPreviewUrlRef.current = url;
+  }, [state.trace]);
 
   // A traced plan synthesises the same plan-shaped object the gallery already
   // produces - areaSqFt from the compiled geometry, planFactor pinned to 1
