@@ -28,6 +28,24 @@ export function buildSummary(result) {
     `Steel intensity   : ${formatNumber(result.totals.kgPerSqFtBuiltUp, 2, locale)} kg/sq.ft of built-up area`,
   );
   L.push('');
+
+  // Always stated, even "High" - a printed or forwarded copy has no access to
+  // the interactive result screen's context, so the confidence basis belongs
+  // in the durable record too, not only in the on-screen UI that hides it for
+  // the common high-confidence case.
+  if (result.confidence) {
+    const { level, band } = result.confidence;
+    L.push('CONFIDENCE');
+    L.push('----------');
+    L.push(
+      `  ${level.charAt(0).toUpperCase() + level.slice(1)} — likely ${formatNumber(band.tonnesLow, 2, locale)}–${formatNumber(band.tonnesHigh, 2, locale)} tonnes`,
+    );
+    if (result.confidence.drivers.length > 1 || level !== 'high') {
+      for (const d of result.confidence.drivers) L.push(`  - ${d.label}: ${d.hint}`);
+    }
+    L.push('');
+  }
+
   L.push('BY BAR DIAMETER');
   L.push('---------------');
   for (const d of result.byDiameter) {

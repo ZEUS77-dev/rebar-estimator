@@ -1,7 +1,12 @@
-import { NumberField, UnitToggle, ArrowRight } from '../ui/Primitives.jsx';
+import { NumberField, UnitToggle, Chip, ArrowRight } from '../ui/Primitives.jsx';
 import SteelOfOman from '../brand/SteelOfOman.jsx';
 import { areaRangeHint, isOutsideRecommended, validateArea } from '../../lib/validation.js';
-import { DEFAULT_ASSUMPTIONS } from '../../data/assumptions.js';
+import {
+  DEFAULT_ASSUMPTIONS,
+  BUILDING_TYPES_LIST,
+  DEFAULT_BUILDING_TYPE,
+  withBuildingType,
+} from '../../data/assumptions.js';
 
 const VALUE_PROPS = [
   {
@@ -41,18 +46,23 @@ function Note({ className = '', ...rest }) {
         <path d="M8 5v3.5M8 11h.01" strokeLinecap="round" />
       </svg>
       <span>
-        That is outside the recommended range. You can still continue — the estimate is calibrated
-        for low-rise homes, so treat the result with extra caution.
+        That is outside the recommended range. You can still continue — the thumb rules behind
+        this estimate are calibrated for a narrower range, so treat the result with extra caution.
       </span>
     </p>
   );
 }
 
 export default function StepArea({ state, dispatch, onNext, assumptions = DEFAULT_ASSUMPTIONS }) {
-  const error = validateArea(state.area, state.unit, assumptions);
+  // Self-sufficient rather than trusting the caller to have already resolved
+  // the building type: idempotent, so it is harmless that useEstimator has
+  // usually done this already by the time `assumptions` gets here.
+  const effective = withBuildingType(assumptions, state.buildingType ?? DEFAULT_BUILDING_TYPE);
+
+  const error = validateArea(state.area, state.unit, effective);
   const touched = state.area !== '';
   // Advisory only — an area outside the recommended band still calculates.
-  const outsideRecommended = !error && isOutsideRecommended(state.area, state.unit, assumptions);
+  const outsideRecommended = !error && isOutsideRecommended(state.area, state.unit, effective);
 
   return (
     <div className="stagger px-4 py-6 sm:px-8">
@@ -74,10 +84,27 @@ export default function StepArea({ state, dispatch, onNext, assumptions = DEFAUL
 
           <div className="mt-8 h-px w-full origin-left bg-gradient-to-r from-molten via-molten/30 to-transparent rule-pour" />
 
-          <h2 className="mt-8 font-mono text-[11px] text-ink">
+          {/* Recommended, not enforced - same philosophy as the area band below.
+              Picking Apartment only widens what counts as a typical area; the
+              engine underneath is identical either way (see withBuildingType
+              in assumptions.js). */}
+          <h2 className="mt-8 font-mono text-[11px] text-ink">Building type</h2>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {BUILDING_TYPES_LIST.map((t) => (
+              <Chip
+                key={t.id}
+                selected={(state.buildingType ?? DEFAULT_BUILDING_TYPE) === t.id}
+                onClick={() => dispatch({ type: 'setBuildingType', value: t.id })}
+              >
+                {t.label}
+              </Chip>
+            ))}
+          </div>
+
+          <h2 className="mt-6 font-mono text-[11px] text-ink">
             Ground floor area
           </h2>
-          <p className="mt-2 text-xs text-dim">{areaRangeHint(state.unit, assumptions)}</p>
+          <p className="mt-2 text-xs text-dim">{areaRangeHint(state.unit, effective)}</p>
 
           <div className="mt-4 flex flex-wrap items-stretch gap-3">
             <div className="min-w-[200px] flex-1">

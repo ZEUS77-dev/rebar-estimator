@@ -14,6 +14,7 @@ import {
   ELEMENT_LABELS,
   FLOORS_BY_ID,
   SCOPES_BY_ID,
+  lateralSurchargeFactor,
 } from '../data/assumptions.js';
 import {
   DIAMETERS_MM,
@@ -24,6 +25,7 @@ import {
 } from '../data/barConstants.js';
 import { normalizeArea, kgToTonne, round } from './units.js';
 import { validateInput, roundAreaSqFt, WARNING_CODES } from './validation.js';
+import { computeConfidence, bandFrom } from './confidence.js';
 
 const isDev = () => {
   try {
@@ -48,13 +50,17 @@ export function elementKg(element, { footprintSqFt: A, levels, planFactor, assum
     // Poured once. It only gets heavier as the load above grows, so this is
     // deliberately sub-linear in `levels` rather than multiplied by it.
     case 'footing':
-      return r.footing * (assumptions.footingStoreyFactor[levels] ?? 1) * A;
+      return r.footing * assumptions.footingStoreyFactor(levels) * A;
     case 'column': {
       const sum = columnLevelFactors(levels, assumptions.columnFactorPerStoreyAbove).reduce(
         (a, b) => a + b,
         0,
       );
-      return r.column * A * sum * pf;
+      // Stands in for shear walls/a core above lateralThresholdLevels, which
+      // this engine does not model - see assumptions.js. A no-op (factor 1)
+      // for every storey count below the threshold, so G/G+1/G+2 are untouched.
+      const lateral = lateralSurchargeFactor(levels, assumptions);
+      return r.column * A * sum * pf * lateral;
     }
     case 'beam':
       return r.beam * A * levels * pf;
@@ -104,7 +110,7 @@ function reconcile(byDia, target) {
  * @param {object} input
  * @param {number|string} input.areaSqFt  value as typed (in `areaUnit`)
  * @param {'sqft'|'sqm'} [input.areaUnit]
- * @param {'G'|'G+1'|'G+2'} [input.floors]
+ * @param {string} [input.floors]         a FLOOR_OPTIONS id, 'G' through 'G+10'
  * @param {object|null} [input.plan]      a FLOOR_PLANS entry
  * @param {string} [input.scope]          a SCOPES id
  * @param {object} [input.assumptions]
@@ -230,6 +236,14 @@ export function estimate({
   const tonnes = kgToTonne(grossKg);
   const cost = byGrade.reduce((a, g) => a + g.cost, 0);
 
+  // Additive: nothing above this line changes shape or value because of it.
+  // The rate is treated as exact when banding cost - it's user-editable, and
+  // stacking rate uncertainty on top of the structural uncertainty would
+  // conflate two different kinds of "unknown".
+  const confidence = computeConfidence({ levels, warnings, assumptions, basis: 'area' });
+  const tonnesBand = bandFrom(tonnes, confidence.sigma);
+  const costBand = bandFrom(cost, confidence.sigma);
+
   return {
     ok: true,
     warnings,
@@ -253,13 +267,26 @@ export function estimate({
       cost,
       blendedRatePerTonne: tonnes ? cost / tonnes : 0,
     },
+    confidence: {
+      basis: confidence.basis,
+      sigma: confidence.sigma,
+      level: confidence.level,
+      drivers: confidence.drivers,
+      band: {
+        tonnesLow: tonnesBand.low,
+        tonnesHigh: tonnesBand.high,
+        costLow: costBand.low,
+        costHigh: costBand.high,
+      },
+    },
     byElement,
     byDiameter,
     byGrade,
     assumptionsUsed: {
       elementRatesKgPerSqFt: assumptions.elementRatesKgPerSqFt,
-      footingStoreyFactorApplied: assumptions.footingStoreyFactor[levels],
+      footingStoreyFactorApplied: assumptions.footingStoreyFactor(levels),
       columnLevelFactors: columnLevelFactors(levels, assumptions.columnFactorPerStoreyAbove),
+      lateralSurchargeFactorApplied: lateralSurchargeFactor(levels, assumptions),
       planFactor,
       wastagePct,
       lapPct,
@@ -282,8 +309,20 @@ export function recost(result, ratePerTonne) {
   const blank = ratePerTonne === '' || ratePerTonne === null || ratePerTonne === undefined;
   const rate = blank ? NaN : Number(ratePerTonne);
   if (!Number.isFinite(rate)) {
-    return { ...result, totals: { ...result.totals, cost: NaN, blendedRatePerTonne: NaN } };
+    return {
+      ...result,
+      totals: { ...result.totals, cost: NaN, blendedRatePerTonne: NaN },
+      confidence: result.confidence && {
+        ...result.confidence,
+        band: { ...result.confidence.band, costLow: NaN, costHigh: NaN },
+      },
+    };
   }
+  // The confidence sigma itself doesn't change with price - only the cost band
+  // it implies does, since cost = tonnes * rate and the rate is held exact.
+  const costBand = result.confidence
+    ? bandFrom(result.totals.tonnes * rate, result.confidence.sigma)
+    : null;
   return {
     ...result,
     byElement: result.byElement.map((e) => ({ ...e, ratePerTonne: rate, cost: e.tonnes * rate })),
@@ -292,6 +331,10 @@ export function recost(result, ratePerTonne) {
       ...result.totals,
       cost: result.totals.tonnes * rate,
       blendedRatePerTonne: rate,
+    },
+    confidence: result.confidence && {
+      ...result.confidence,
+      band: { ...result.confidence.band, costLow: costBand.low, costHigh: costBand.high },
     },
   };
 }

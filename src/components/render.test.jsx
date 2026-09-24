@@ -17,14 +17,16 @@ import StepPlan from './wizard/StepPlan.jsx';
 import StepScope from './wizard/StepScope.jsx';
 import ResultView from './result/ResultView.jsx';
 import CostCard from './result/CostCard.jsx';
+import ConfidenceBand from './result/ConfidenceBand.jsx';
 import FloorPlanSvg from './plans/FloorPlanSvg.jsx';
 import { Stepper, ThemeToggle, BrandHeader, WizardNav } from './ui/Primitives.jsx';
 import SteelOfOman from './brand/SteelOfOman.jsx';
 import { STEEL_OF_OMAN, shuffled } from '../data/steelOfOman.js';
 
 import { estimate } from '../lib/estimator.js';
+import { buildSummary } from '../lib/share.js';
 import { FLOOR_PLANS, PLANS_BY_ID, PLANS_IN_ORDER, BHK_FILTERS } from '../data/floorPlans.js';
-import { DEFAULT_ASSUMPTIONS, SCOPES } from '../data/assumptions.js';
+import { DEFAULT_ASSUMPTIONS, SCOPES, FLOOR_OPTIONS } from '../data/assumptions.js';
 
 const noop = () => {};
 const state = {
@@ -115,11 +117,48 @@ describe('screens render', () => {
     expect(html).toContain('aria-hidden="true"');
   });
 
-  it('renders step 2 with all three floor options', () => {
+  it('offers a villa/apartment toggle, defaulting to villa', () => {
+    const html = renderStep1({});
+    expect(html).toContain('Villa / house');
+    expect(html).toContain('Apartment block');
+    expect(html).toContain('Recommended 500 – 3,000 sq. ft.'); // the villa band
+  });
+
+  it('widens the recommended band when apartment is selected', () => {
+    const html = renderStep1({ buildingType: 'apartment' });
+    expect(html).toContain('Recommended 3,000 – 40,000 sq. ft.');
+    expect(html).not.toContain('Recommended 500 – 3,000 sq. ft.');
+  });
+
+  it('falls back to the villa band when buildingType is unset (older/hand-built state)', () => {
+    const { buildingType: _unused, ...withoutType } = state;
+    const html = renderToString(
+      <StepArea state={withoutType} dispatch={noop} onNext={noop} assumptions={DEFAULT_ASSUMPTIONS} />,
+    );
+    expect(html).toContain('Recommended 500 – 3,000 sq. ft.');
+  });
+
+  it('renders step 2 with all three original floor options', () => {
     const html = renderToString(<StepFloors state={state} dispatch={noop} />);
     expect(html).toContain('Ground');
     expect(html).toContain('G+1');
     expect(html).toContain('G+2');
+  });
+
+  it('renders every one of the eleven floor options without crashing', () => {
+    const html = renderToString(<StepFloors state={state} dispatch={noop} />);
+    for (const f of FLOOR_OPTIONS) expect(html, f.id).toContain(`>${f.label}<`);
+  });
+
+  it('switches to the fixed-geometry massing icon past G+2, badge and all', () => {
+    const html = renderToString(<StepFloors state={state} dispatch={noop} />);
+    // G+3's storey badge is drawn text, so its id must appear a second time -
+    // once as the visible label, once inside the icon's <text> node.
+    const g3Count = (html.match(/G\+3/g) || []).length;
+    expect(g3Count).toBeGreaterThanOrEqual(2);
+    // The low-rise icons never carry a badge - only the massing ones do.
+    const g1Count = (html.match(/G\+1(?!0)/g) || []).length;
+    expect(g1Count).toBe(1);
   });
 
   it('renders step 3 as a filmstrip plus a detail pane', () => {
@@ -594,5 +633,64 @@ describe('mobile: nothing widens the page', () => {
     const html = resultHtml();
     expect(html).toContain('Scroll the table sideways');
     expect(html).toContain('sm:hidden');
+  });
+});
+
+describe('confidence band', () => {
+  const plan2bhk = PLANS_BY_ID['fp-05'];
+
+  it('renders nothing for the calibrated villa case', () => {
+    const r = estimate({ areaSqFt: 1356.25, floors: 'G+1', plan: plan2bhk, scope: 'full' });
+    expect(r.confidence.level).toBe('high');
+    const html = renderToString(
+      <ConfidenceBand confidence={r.confidence} locale="en-US" currency="USD" />,
+    );
+    expect(html).toBe('');
+  });
+
+  it('renders the level, the tonnage range and the top reason for a G+10 tower', () => {
+    const r = estimate({ areaSqFt: 20000, floors: 'G+10', plan: plan2bhk, scope: 'full' });
+    expect(r.confidence.level).toBe('low');
+    const html = renderToString(
+      <ConfidenceBand confidence={r.confidence} locale="en-US" currency="USD" />,
+    );
+    expect(html).toContain('Low confidence');
+    expect(html).toContain('Likely');
+    expect(html).toContain(r.confidence.drivers[0].hint);
+  });
+
+  it('folds every driver into a <details> when there is more than one', () => {
+    const r = estimate({ areaSqFt: 60000, floors: 'G+10', plan: null, scope: 'full' });
+    expect(r.confidence.drivers.length).toBeGreaterThan(1);
+    const html = renderToString(
+      <ConfidenceBand confidence={r.confidence} locale="en-US" currency="USD" />,
+    );
+    expect(html).toContain('<details');
+    expect(html).toContain(`${r.confidence.drivers.length} factors`);
+    for (const d of r.confidence.drivers) expect(html, d.code).toContain(d.label);
+  });
+
+  it('never renders on the null/failed result guard path', () => {
+    expect(renderToString(<ConfidenceBand confidence={null} locale="en-US" currency="USD" />)).toBe(
+      '',
+    );
+  });
+});
+
+describe('confidence in the exported summary', () => {
+  const plan2bhk = PLANS_BY_ID['fp-05'];
+
+  it('always states the confidence level, even when it is high', () => {
+    const r = estimate({ areaSqFt: 1356.25, floors: 'G+1', plan: plan2bhk, scope: 'full' });
+    const text = buildSummary(r);
+    expect(text).toContain('CONFIDENCE');
+    expect(text).toContain('High');
+  });
+
+  it('lists every driver once confidence has dropped', () => {
+    const r = estimate({ areaSqFt: 20000, floors: 'G+10', plan: plan2bhk, scope: 'full' });
+    const text = buildSummary(r);
+    expect(text).toContain('Low');
+    for (const d of r.confidence.drivers) expect(text, d.code).toContain(d.label);
   });
 });

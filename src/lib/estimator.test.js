@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { estimate, recost, columnLevelFactors } from './estimator.js';
-import { DEFAULT_ASSUMPTIONS, SCOPES } from '../data/assumptions.js';
+import {
+  DEFAULT_ASSUMPTIONS,
+  SCOPES,
+  FLOOR_OPTIONS,
+  footingStoreyFactor,
+  lateralSurchargeFactor,
+} from '../data/assumptions.js';
 import { FLOOR_PLANS, PLANS_BY_ID } from '../data/floorPlans.js';
 import { DIAMETERS_MM, unitWeightKgPerM, kgPer12mBar } from '../data/barConstants.js';
 import { SQFT_PER_SQM } from './units.js';
@@ -272,5 +278,122 @@ describe('spot check from the mockup', () => {
     expect(r.geometry.builtUpSqFt).toBe(2712);
     expect(r.totals.tonnes).toBeGreaterThan(10);
     expect(r.totals.tonnes).toBeLessThan(11);
+  });
+});
+
+describe('extended floor range (G+3..G+10)', () => {
+  it('offers eleven floor options, G through G+10', () => {
+    expect(FLOOR_OPTIONS).toHaveLength(11);
+    expect(FLOOR_OPTIONS.map((f) => f.id)).toEqual([
+      'G', 'G+1', 'G+2', 'G+3', 'G+4', 'G+5', 'G+6', 'G+7', 'G+8', 'G+9', 'G+10',
+    ]);
+    expect(FLOOR_OPTIONS.map((f) => f.levels)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
+  it('computes ok:true for every floor option, not just the original three', () => {
+    for (const f of FLOOR_OPTIONS) {
+      const r = estimate({ ...base, floors: f.id });
+      expect(r.ok, f.id).toBe(true);
+      expect(r.geometry.levels, f.id).toBe(f.levels);
+    }
+  });
+
+  it('extends the footing curve smoothly rather than falling back to 1.0', () => {
+    // The original 3-point table, reproduced exactly by the new formula.
+    expect(footingStoreyFactor(1)).toBeCloseTo(0.8, 9);
+    expect(footingStoreyFactor(2)).toBeCloseTo(1.0, 9);
+    expect(footingStoreyFactor(3)).toBeCloseTo(1.18, 9);
+    // And it keeps growing, sub-linearly, well past the old cap - never the
+    // old silent `?? 1` fallback, which would have made a G+10 footing
+    // LIGHTER than a G+2's.
+    for (let n = 4; n <= 11; n++) {
+      expect(footingStoreyFactor(n), `n=${n}`).toBeGreaterThan(footingStoreyFactor(n - 1));
+    }
+    expect(footingStoreyFactor(11)).toBeGreaterThan(1.18);
+  });
+
+  it('leaves column steel untouched by the lateral surcharge at or below the threshold', () => {
+    const { lateralThresholdLevels } = DEFAULT_ASSUMPTIONS;
+    for (let levels = 1; levels <= lateralThresholdLevels; levels++) {
+      expect(lateralSurchargeFactor(levels, DEFAULT_ASSUMPTIONS)).toBe(1);
+    }
+  });
+
+  it('grows the lateral surcharge only past the threshold, and only the column element', () => {
+    const { lateralThresholdLevels } = DEFAULT_ASSUMPTIONS;
+    const over = lateralThresholdLevels + 3;
+    expect(lateralSurchargeFactor(over, DEFAULT_ASSUMPTIONS)).toBeGreaterThan(1);
+
+    const noLateral = estimate({ ...base, floors: 'G+2', scope: 'column' });
+    const withLateral = estimate({ ...base, floors: 'G+10', scope: 'column' });
+    // Column kg/level grows for two reasons past G+10 vs G+2: more storeys
+    // above each column AND the lateral surcharge. Isolate the surcharge by
+    // comparing to what the level factors alone would give.
+    const perLevelFactorSum = (levels) =>
+      columnLevelFactors(levels, DEFAULT_ASSUMPTIONS.columnFactorPerStoreyAbove).reduce(
+        (a, b) => a + b,
+        0,
+      );
+    const expectedWithoutLateral =
+      (noLateral.totals.grossKg / perLevelFactorSum(3)) * perLevelFactorSum(11);
+    expect(withLateral.totals.grossKg).toBeGreaterThan(expectedWithoutLateral);
+  });
+
+  it('never scales footing linearly even far past the old cap', () => {
+    const g = estimate({ ...base, floors: 'G', scope: 'footing' });
+    const tall = estimate({ ...base, floors: 'G+10', scope: 'footing' });
+    const ratio = tall.totals.grossKg / g.totals.grossKg;
+    expect(ratio).toBeGreaterThan(1); // heavier under more load
+    expect(ratio).toBeLessThan(11); // nowhere near proportional to levels
+  });
+});
+
+describe('confidence', () => {
+  it('is additive to the result shape - every existing field is untouched', () => {
+    const r = estimate(base);
+    expect(r.confidence).toBeDefined();
+    expect(r.confidence.basis).toBe('area');
+    expect(typeof r.confidence.sigma).toBe('number');
+    expect(['high', 'moderate', 'low']).toContain(r.confidence.level);
+    expect(Array.isArray(r.confidence.drivers)).toBe(true);
+    expect(r.confidence.band).toEqual(
+      expect.objectContaining({
+        tonnesLow: expect.any(Number),
+        tonnesHigh: expect.any(Number),
+        costLow: expect.any(Number),
+        costHigh: expect.any(Number),
+      }),
+    );
+  });
+
+  it('brackets the point tonnage inside its own band', () => {
+    const r = estimate(base);
+    expect(r.confidence.band.tonnesLow).toBeLessThanOrEqual(r.totals.tonnes);
+    expect(r.confidence.band.tonnesHigh).toBeGreaterThanOrEqual(r.totals.tonnes);
+  });
+
+  it('widens for a taller building than for the calibrated villa case', () => {
+    const villa = estimate({ ...base, floors: 'G+1' });
+    const tower = estimate({ ...base, floors: 'G+10' });
+    expect(tower.confidence.sigma).toBeGreaterThan(villa.confidence.sigma);
+    const villaWidth = villa.confidence.band.tonnesHigh - villa.confidence.band.tonnesLow;
+    const towerWidth = tower.confidence.band.tonnesHigh - tower.confidence.band.tonnesLow;
+    expect(towerWidth / tower.totals.tonnes).toBeGreaterThan(villaWidth / villa.totals.tonnes);
+  });
+
+  it('rescales the cost band, not the sigma, when recost() changes the rate', () => {
+    const r = estimate(base);
+    const re = recost(r, 90000);
+    expect(re.confidence.sigma).toBe(r.confidence.sigma);
+    expect(re.confidence.band.costLow).not.toBeCloseTo(r.confidence.band.costLow, 0);
+    // The band still brackets the new point cost.
+    expect(re.confidence.band.costLow).toBeLessThanOrEqual(re.totals.cost);
+    expect(re.confidence.band.costHigh).toBeGreaterThanOrEqual(re.totals.cost);
+  });
+
+  it('produces a NaN cost band, not a stale one, when the rate is blank', () => {
+    const re = recost(estimate(base), '');
+    expect(Number.isNaN(re.confidence.band.costLow)).toBe(true);
+    expect(Number.isNaN(re.confidence.band.costHigh)).toBe(true);
   });
 });
