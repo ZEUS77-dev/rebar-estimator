@@ -10,7 +10,8 @@ import { Chip, CheckIcon } from '../ui/Primitives.jsx';
 import FloorPlanSvg from '../plans/FloorPlanSvg.jsx';
 import { PLANS_IN_ORDER, BHK_FILTERS, PLANS_BY_ID } from '../../data/floorPlans.js';
 import { DEFAULT_ASSUMPTIONS } from '../../data/assumptions.js';
-import { formatNumber, formatArea, sqmToSqft } from '../../lib/units.js';
+import { formatNumber, formatArea, sqmToSqft, normalizeArea, round, convertArea } from '../../lib/units.js';
+import { roundAreaSqFt, PLAN_AREA_MISMATCH_THRESHOLD } from '../../lib/validation.js';
 
 // Lazy-loaded: nothing in Plan Studio (the SVG viewport, the trace reducer)
 // should cost the homeowner path a single byte unless they actually open it.
@@ -19,6 +20,10 @@ const TracePreview = lazy(() => import('../studio/TracePreview.jsx'));
 
 export default function StepPlan({ state, dispatch, assumptions = DEFAULT_ASSUMPTIONS }) {
   const [studioOpen, setStudioOpen] = useState(false);
+  // A finished trace whose area meaningfully disagrees with what was typed on
+  // step 1 waits here until the user picks which number is real, rather than
+  // silently living with both (see AreaConfirmDialog below).
+  const [pendingTrace, setPendingTrace] = useState(null);
   const traced = state.planSource === 'traced' ? state.trace : null;
   const plans = useMemo(
     () =>
@@ -36,6 +41,34 @@ export default function StepPlan({ state, dispatch, assumptions = DEFAULT_ASSUMP
   const isChosen = Boolean(viewing && chosen && viewing.id === chosen.id);
 
   const factorOf = (p) => p.planFactor ?? assumptions.planFactorByBhk[p.bhk] ?? 1;
+
+  // A trace just came back from the Studio. If its area is close enough to
+  // what was typed on step 1, there's nothing to decide - just use it. If not,
+  // hold it and ask which number the rest of the estimate should be built on.
+  const handleUseTrace = (trace) => {
+    const enteredSqFt = roundAreaSqFt(normalizeArea(state.area, state.unit), assumptions);
+    const tracedSqFt = sqmToSqft(trace.geometry.derived.areaSqM);
+    const deviation = enteredSqFt ? Math.abs(tracedSqFt - enteredSqFt) / enteredSqFt : 0;
+
+    if (deviation <= PLAN_AREA_MISMATCH_THRESHOLD) {
+      dispatch({ type: 'setTrace', value: trace });
+      setStudioOpen(false);
+      return;
+    }
+    setPendingTrace(trace);
+    setStudioOpen(false);
+  };
+
+  const resolvePendingTrace = (useTracedArea) => {
+    if (!pendingTrace) return;
+    if (useTracedArea) {
+      const areaInCurrentUnit =
+        state.unit === 'sqm' ? pendingTrace.geometry.derived.areaSqM : sqmToSqft(pendingTrace.geometry.derived.areaSqM);
+      dispatch({ type: 'setArea', value: String(round(areaInCurrentUnit, 2)) });
+    }
+    dispatch({ type: 'setTrace', value: pendingTrace });
+    setPendingTrace(null);
+  };
 
   return (
     <div className="stagger px-4 py-6 sm:px-8">
@@ -214,14 +247,18 @@ export default function StepPlan({ state, dispatch, assumptions = DEFAULT_ASSUMP
 
       {studioOpen && (
         <Suspense fallback={null}>
-          <PlanStudio
-            onClose={() => setStudioOpen(false)}
-            onUseTrace={(trace) => {
-              dispatch({ type: 'setTrace', value: trace });
-              setStudioOpen(false);
-            }}
-          />
+          <PlanStudio onClose={() => setStudioOpen(false)} onUseTrace={handleUseTrace} />
         </Suspense>
+      )}
+
+      {pendingTrace && (
+        <AreaConfirmDialog
+          enteredSqFt={roundAreaSqFt(normalizeArea(state.area, state.unit), assumptions)}
+          unit={state.unit}
+          tracedSqFt={sqmToSqft(pendingTrace.geometry.derived.areaSqM)}
+          onKeepEntered={() => resolvePendingTrace(false)}
+          onUseTraced={() => resolvePendingTrace(true)}
+        />
       )}
     </div>
   );
@@ -293,6 +330,58 @@ function TracedDetail({ trace, onRetrace }) {
             Column, beam and slab steel are computed from this measured layout instead of a flat
             rate. Press Next to continue.
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Blocks progress on purpose: the entered footprint and the traced one
+ *  disagree by more than the app's own "meaningfully different" threshold
+ *  (see PLAN_AREA_MISMATCH_THRESHOLD), so which one is right is a decision
+ *  only the person who measured them can make — guessing either way would be
+ *  silently wrong for someone. Whichever is picked becomes the footprint used
+ *  for footings, the staircase/misc allowance and every area check on step 1;
+ *  columns, beams and slabs already come from the traced layout regardless. */
+function AreaConfirmDialog({ enteredSqFt, tracedSqFt, unit, onKeepEntered, onUseTraced }) {
+  const enteredDisplay = formatArea(convertArea(enteredSqFt, 'sqft', unit), unit);
+  const tracedDisplay = formatArea(convertArea(tracedSqFt, 'sqft', unit), unit);
+  const deviationPct = enteredSqFt ? Math.abs(tracedSqFt - enteredSqFt) / enteredSqFt : 0;
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-lg border border-line bg-panel p-5 shadow-forge">
+        <p className="label-eyebrow">Which area is right?</p>
+        <h3 className="mt-1 text-base text-ink">
+          Your traced plan is {formatNumber(deviationPct * 100, 0)}% away from what you entered
+        </h3>
+        <p className="mt-2 text-xs leading-relaxed text-dim">
+          Pick the number that actually matches the building — it becomes the footprint used for
+          footings and the overall total. Columns, beams and slabs already come from the traced
+          layout either way.
+        </p>
+
+        <div className="mt-4 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={onKeepEntered}
+            className="tile flex items-center justify-between gap-3 !p-3 text-left"
+          >
+            <span>
+              <span className="block font-mono text-[10px] text-dim">What I entered</span>
+              <span className="block text-sm text-ink">{enteredDisplay}</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={onUseTraced}
+            className="tile flex items-center justify-between gap-3 !p-3 text-left"
+          >
+            <span>
+              <span className="block font-mono text-[10px] text-dim">The traced measurement</span>
+              <span className="block text-sm text-ink">{tracedDisplay}</span>
+            </span>
+          </button>
         </div>
       </div>
     </div>

@@ -16,6 +16,12 @@ export const ERROR_CODES = {
   UNKNOWN_SCOPE: 'UNKNOWN_SCOPE',
 };
 
+/** How far a plan's own area can sit from the entered footprint before it
+ *  counts as a real mismatch rather than rounding noise. Shared with the
+ *  traced-plan area-confirmation prompt (StepPlan.jsx) so both places agree
+ *  on what "meaningfully different" means. */
+export const PLAN_AREA_MISMATCH_THRESHOLD = 0.25;
+
 export const WARNING_CODES = {
   PLAN_AREA_MISMATCH: 'PLAN_AREA_MISMATCH',
   PLAN_NOT_SELECTED: 'PLAN_NOT_SELECTED',
@@ -136,7 +142,7 @@ export function validateInput(
     });
   } else {
     const deviation = Math.abs(plan.areaSqFt - rounded) / rounded;
-    if (deviation > 0.25) {
+    if (deviation > PLAN_AREA_MISMATCH_THRESHOLD) {
       warnings.push({
         code: WARNING_CODES.PLAN_AREA_MISMATCH,
         message: `Selected plan is ${formatNumber(plan.areaSqFt, 2)} sq. ft., ${formatNumber(
