@@ -11,8 +11,9 @@ import { DEFAULT_ASSUMPTIONS, DISCLAIMER } from './data/assumptions.js';
 import { validateArea } from './lib/validation.js';
 
 export default function App() {
-  const assumptions = DEFAULT_ASSUMPTIONS;
-  const { state, dispatch, result } = useEstimator(assumptions);
+  // useEstimator resolves the buildingType choice into the assumptions object
+  // every screen below reads - see withBuildingType() in assumptions.js.
+  const { state, dispatch, result, assumptions } = useEstimator(DEFAULT_ASSUMPTIONS);
   const { isNight, toggle: toggleTheme } = useTheme();
   const scrolled = useScrolled();
 

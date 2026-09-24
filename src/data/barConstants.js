@@ -1,10 +1,12 @@
 /** TMT bar physical constants.
  *  Nominal unit weight per IS 1786: kg/m = d^2 / 162.
- *  8-25 mm is the working set for residential G to G+2 construction. */
+ *  8-25 mm is the working set for low-rise residential construction; 32 mm joins
+ *  it for taller buildings, where columns commonly need a heavier bar than a
+ *  villa ever does. */
 
 export const BAR_LENGTH_M = 12;
 
-export const DIAMETERS_MM = [8, 10, 12, 16, 20, 25];
+export const DIAMETERS_MM = [8, 10, 12, 16, 20, 25, 32];
 
 /** kg per running metre for a bar of diameter d (mm). */
 export const unitWeightKgPerM = (d) => (d * d) / 162;

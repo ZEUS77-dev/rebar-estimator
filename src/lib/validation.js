@@ -5,7 +5,7 @@
  *  guidance, but any positive area is accepted and rounded; one outside the band
  *  earns a note on entry and a warning on the result screen, never a block. */
 
-import { DEFAULT_ASSUMPTIONS } from '../data/assumptions.js';
+import { DEFAULT_ASSUMPTIONS, FLOORS_BY_ID } from '../data/assumptions.js';
 import { normalizeArea, sqftToSqm, formatNumber } from './units.js';
 
 export const ERROR_CODES = {
@@ -46,7 +46,7 @@ export function areaRangeHint(unit = 'sqft', assumptions = DEFAULT_ASSUMPTIONS) 
   return `Recommended ${formatNumber(min, 0)} – ${formatNumber(
     max,
     0,
-  )} ${suffix} for a home. Other sizes are accepted.`;
+  )} ${suffix}. Other sizes are accepted.`;
 }
 
 /** Non-blocking: true when the entered area sits outside the recommended band,
@@ -89,7 +89,10 @@ export function validateInput(
   const areaError = validateArea(areaSqFt, areaUnit, assumptions);
   if (areaError) errors.push({ field: 'areaSqFt', ...areaError });
 
-  if (floors && !['G', 'G+1', 'G+2'].includes(floors)) {
+  // Derived from FLOOR_OPTIONS rather than a second hardcoded list - that
+  // duplication is exactly what let this cap drift out of sync once already
+  // (see assumptions.js for the full extension to G+10).
+  if (floors && !FLOORS_BY_ID[floors]) {
     errors.push({
       field: 'floors',
       code: ERROR_CODES.UNKNOWN_FLOORS,
@@ -122,7 +125,7 @@ export function validateInput(
       )} sq. ft. is outside the recommended ${formatNumber(min, 0)}–${formatNumber(
         max,
         0,
-      )} sq. ft. for a home. The thumb rules behind this estimate are calibrated for low-rise housing, so treat the result with extra caution.`,
+      )} sq. ft. for this building type. The thumb rules behind this estimate are calibrated for a narrower range, so treat the result with extra caution.`,
     });
   }
 

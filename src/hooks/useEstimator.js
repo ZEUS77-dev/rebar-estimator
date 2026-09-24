@@ -6,7 +6,7 @@
 
 import { useMemo, useReducer } from 'react';
 import { estimate, recost } from '../lib/estimator.js';
-import { DEFAULT_ASSUMPTIONS } from '../data/assumptions.js';
+import { DEFAULT_ASSUMPTIONS, DEFAULT_BUILDING_TYPE, withBuildingType } from '../data/assumptions.js';
 import { PLANS_BY_ID } from '../data/floorPlans.js';
 import { convertArea, round } from '../lib/units.js';
 import { clampRate } from '../lib/validation.js';
@@ -30,6 +30,7 @@ const initialState = {
   scope: 'full',
   rate: null, // null = use the per-grade default rates
   grade: null, // null = per-element defaults
+  buildingType: DEFAULT_BUILDING_TYPE, // 'villa' | 'apartment' - widens the recommended area band only
 };
 
 function reducer(state, action) {
@@ -66,14 +67,26 @@ function reducer(state, action) {
       return { ...state, rate: action.value };
     case 'setGrade':
       return { ...state, grade: action.value };
+    case 'setBuildingType':
+      return { ...state, buildingType: action.value };
 
     default:
       return state;
   }
 }
 
-export function useEstimator(assumptions = DEFAULT_ASSUMPTIONS) {
+export function useEstimator(baseAssumptions = DEFAULT_ASSUMPTIONS) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  // The one thing a building-type preset changes: which area counts as
+  // typical (see withBuildingType). Every rate and factor underneath is the
+  // same object either way - it's the same engine, not a second one. This is
+  // the assumptions object every consumer should use from here on, in place
+  // of the raw one passed in.
+  const assumptions = useMemo(
+    () => withBuildingType(baseAssumptions, state.buildingType),
+    [baseAssumptions, state.buildingType],
+  );
 
   const plan = state.planId ? PLANS_BY_ID[state.planId] : null;
 
@@ -98,5 +111,5 @@ export function useEstimator(assumptions = DEFAULT_ASSUMPTIONS) {
     return clamped === null ? recost(baseResult, NaN) : recost(baseResult, clamped);
   }, [baseResult, state.rate, assumptions]);
 
-  return { state, dispatch, plan, result };
+  return { state, dispatch, plan, result, assumptions };
 }

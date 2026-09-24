@@ -3,6 +3,7 @@ import ElementSplit from './ElementSplit.jsx';
 import CostCard from './CostCard.jsx';
 import AssumptionsPanel from './AssumptionsPanel.jsx';
 import PrintShareBar from './PrintShareBar.jsx';
+import ConfidenceBand from './ConfidenceBand.jsx';
 import { ArrowLeft, Disclaimer } from '../ui/Primitives.jsx';
 import { formatNumber, formatCurrency, formatArea } from '../../lib/units.js';
 import { SCOPES_BY_ID } from '../../data/assumptions.js';
@@ -106,6 +107,12 @@ export default function ResultView({ result, state, dispatch, onBack, onRestart,
           value={`${formatNumber(result.totals.kgPerSqFtBuiltUp, 2, locale)} kg/sq ft`}
           sub="of built-up area · typical range 3.5 – 4.5"
         />
+      </div>
+
+      {/* Only renders once confidence drops below "high" - see ConfidenceBand
+          for why that threshold matters more than tucking this away. */}
+      <div className="mt-4" style={{ '--i': 1 }}>
+        <ConfidenceBand confidence={result.confidence} locale={locale} currency={currency} />
       </div>
 
       <div className="mt-5">

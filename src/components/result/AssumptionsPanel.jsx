@@ -20,7 +20,8 @@ export default function AssumptionsPanel({ result }) {
     <section className="card avoid-break p-5">
       <h3 className="text-sm font-semibold text-ink">Assumptions used</h3>
       <p className="mt-0.5 text-xs text-dim">
-        Indicative thumb rules for low-rise residential RCC, built up per element.
+        Indicative thumb rules, built up per element — calibrated up to G+2; taller than that
+        is an extrapolation of the same curve (see the confidence note above, if shown).
       </p>
 
       <dl className="mt-4 divide-y divide-line text-sm">
@@ -48,6 +49,12 @@ export default function AssumptionsPanel({ result }) {
           label="Column factor per level"
           value={a.columnLevelFactors.map((f) => formatNumber(f, 2, locale)).join(' · ')}
         />
+        {a.lateralSurchargeFactorApplied > 1 && (
+          <Row
+            label="Lateral surcharge (no shear walls modelled)"
+            value={`× ${formatNumber(a.lateralSurchargeFactorApplied, 2, locale)}`}
+          />
+        )}
         <Row
           label="Steel intensity"
           value={`${formatNumber(result.totals.kgPerSqFtBuiltUp, 2, locale)} kg/sq ft built-up`}
